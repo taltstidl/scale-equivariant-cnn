@@ -3,15 +3,12 @@
 This module contains the models presented in the paper.
 """
 import numpy as np
-import pytorch_lightning as pl
-import torch.nn.functional as F
 from torch import nn
-from torch.optim import Adam
 
 from siconvnet.layers import SiConv2d, ScalePool
 
 
-class BaseModel(pl.LightningModule):
+class BaseModel(nn.Module):
     """ Base class for all models.
 
     This model establishes a common baseline for all experiments. More specifically, it applies the cross entropy loss,
@@ -21,9 +18,6 @@ class BaseModel(pl.LightningModule):
     def __init__(self):
         """"""
         super().__init__()
-        self.train_acc = pl.metrics.Accuracy()
-        self.val_acc = pl.metrics.Accuracy()
-        self.learning_rate = 1e-2
         self.tracing = False
         self.tracing_cache = {}
 
@@ -44,35 +38,6 @@ class BaseModel(pl.LightningModule):
             concat = np.concatenate(arrays)
             self.tracing_cache[name] = concat
         return self.tracing_cache
-
-    def training_step(self, batch, batch_idx):
-        """"""
-        images, labels = batch
-        output = self.forward(images)
-        loss = F.cross_entropy(output, labels)
-        self.log('train_loss', loss, on_epoch=True)
-        self.log('train_acc_step', self.train_acc(output.argmax(dim=1), labels))
-        return loss
-
-    def training_epoch_end(self, outs):
-        """"""
-        self.log('train_acc_epoch', self.train_acc.compute())
-
-    def validation_step(self, batch, batch_idx):
-        """"""
-        images, labels = batch
-        output = self.forward(images)
-        loss = F.cross_entropy(output, labels)
-        self.log('val_loss', loss, on_epoch=True)
-        self.log('val_acc_step', self.val_acc(output.argmax(dim=1), labels))
-
-    def validation_epoch_end(self, outs):
-        """"""
-        self.log('val_acc_epoch', self.val_acc.compute())
-
-    def configure_optimizers(self):
-        """"""
-        return Adam(self.parameters(), lr=self.learning_rate)
 
     def forward(self, x):
         """"""

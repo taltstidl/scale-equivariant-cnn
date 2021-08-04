@@ -1,11 +1,10 @@
 from typing import Optional
 
-import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from dataset import EmojiDataset
 
 
-class EmojiDataModule(pl.LightningDataModule):
+class EmojiDataModule:
     """ Emoji data module.
 
     Parameters
@@ -20,12 +19,11 @@ class EmojiDataModule(pl.LightningDataModule):
         super().__init__()
         self.batch_size = batch_size
         self.evaluation = evaluation
-
-    def prepare_data(self):
-        pass  # No data preparation required
-
-    def setup(self, stage: Optional[str] = None):
         self.dataset = EmojiDataset()
+        self.split_dataset()
+
+    def split_dataset(self):
+        # TODO: Add other evaluation schemes
         if self.evaluation == 1:  # Train on all scales, evaluate on all scales
             self.emoji_train = self.dataset.to_torch(split='train', scale_start=64, scale_stop=32)
             self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=64, scale_stop=32)
@@ -39,14 +37,16 @@ class EmojiDataModule(pl.LightningDataModule):
             self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=64, scale_stop=63)
             self.emoji_test = self.dataset.to_torch(split='test', scale_start=63, scale_stop=32)
 
-    def train_dataloader(self):
+    def train_loader(self):
         return DataLoader(self.emoji_train, batch_size=self.batch_size)
 
-    def val_dataloader(self):
+    def valid_loader(self):
         return DataLoader(self.emoji_valid, batch_size=self.batch_size)
 
-    def test_dataloader(self):
+    def test_loader(self):
         return DataLoader(self.emoji_test, batch_size=self.batch_size)
 
-    def predict_dataloader(self):
-        return self.test_dataloader()
+    def to(self, device):
+        self.emoji_train.tensors = [t.to(device) for t in self.emoji_train.tensors]
+        self.emoji_valid.tensors = [t.to(device) for t in self.emoji_valid.tensors]
+        self.emoji_test.tensors = [t.to(device) for t in self.emoji_test.tensors]
