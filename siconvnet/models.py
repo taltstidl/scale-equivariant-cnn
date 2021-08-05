@@ -15,9 +15,10 @@ class BaseModel(nn.Module):
     records the training and validation accuracy and configures an Adam optimizer.
     """
 
-    def __init__(self):
+    def __init__(self, interpolation):
         """"""
         super().__init__()
+        self.interpolation = interpolation
         self.tracing = False
         self.tracing_cache = {}
 
@@ -45,9 +46,9 @@ class BaseModel(nn.Module):
 
 
 class StandardModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         """"""
-        super().__init__()
+        super().__init__(**kwargs)
         self.conv1 = nn.Conv2d(1, 16, (7, 7))
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv2d(16, 32, (7, 7))
@@ -72,13 +73,13 @@ class StandardModel(BaseModel):
 
 
 class PixelPoolModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         """"""
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode='pixel')
         self.act1 = nn.ReLU()
-        self.conv2 = SiConv2d(16, 32, 26, 7)
+        self.conv2 = SiConv2d(16, 32, 26, 7, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode='pixel')
         self.act2 = nn.ReLU()
         self.global_pool = nn.MaxPool2d((52, 52))
@@ -103,13 +104,13 @@ class PixelPoolModel(BaseModel):
 
 
 class SlicePoolModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         """"""
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode='slice')
         self.act1 = nn.ReLU()
-        self.conv2 = SiConv2d(16, 32, 26, 7)
+        self.conv2 = SiConv2d(16, 32, 26, 7, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode='slice')
         self.act2 = nn.ReLU()
         self.global_pool = nn.MaxPool2d((52, 52))
@@ -134,10 +135,10 @@ class SlicePoolModel(BaseModel):
 
 
 class Conv3dModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         """"""
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv3d(16, 32, (5, 5, 5))
         self.act2 = nn.ReLU()

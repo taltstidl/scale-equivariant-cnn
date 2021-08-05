@@ -2,15 +2,14 @@
 
 Command-line interface for training models.
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --model {standard,pixel_pool,slice_pool,conv3d}
-                        The model type that should be trained
-  --evaluation {1,2,3,4,5}
-                        The evaluation scheme that should be used
-  --interpolation {nearest,bilinear,bicubic,area}
-                        The interpolation technique that should be used
-  --seed SEED           The seed used for random initialization
+This supports the following hyperparameters:
+
+| Name          | Values                                | Description                                     |
+| ============= | ===================================== | =============================================== |
+| model         | standard,pixel_pool,slice_pool,conv3d | The model type that should be trained           |
+| evaluation    | 1,2,3,4,5                             | The evaluation scheme that should be used       |
+| interpolation | nearest,bilinear,bicubic,area         | The interpolation technique that should be used |
+| seed          | (integer)                             | The seed used for random initialization         |
 """
 import argparse
 import os.path
@@ -162,7 +161,6 @@ def train(net, data):
 
 
 def main():
-    # TODO: Actually use the interpolation parameter
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',
@@ -187,7 +185,7 @@ def main():
         'slice_pool': SlicePoolModel,
         'conv3d': Conv3dModel
     }
-    network = network_map[args.model]()
+    network = network_map[args.model](interpolation=args.interpolation)
     data = EmojiDataModule(batch_size=16, evaluation=args.evaluation)
     # Train the network with the given data
     train(network, data)
