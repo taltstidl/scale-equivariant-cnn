@@ -23,7 +23,6 @@ class EmojiDataModule:
         self.split_dataset()
 
     def split_dataset(self):
-        # TODO: Add other evaluation schemes
         if self.evaluation == 1:  # Train on all scales, evaluate on all scales
             self.emoji_train = self.dataset.to_torch(split='train', scale_start=64, scale_stop=32)
             self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=64, scale_stop=32)
@@ -32,10 +31,18 @@ class EmojiDataModule:
             self.emoji_train = self.dataset.to_torch(split='train', scale_start=64, scale_stop=48)
             self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=64, scale_stop=48)
             self.emoji_test = self.dataset.to_torch(split='test', scale_start=48, scale_stop=32)
-        if self.evaluation == 3:  # Train with single scale, evaluate with all other scales
+        if self.evaluation == 3:  # Train on half the scales, evaluate on other half
+            self.emoji_train = self.dataset.to_torch(split='train', scale_start=48, scale_stop=32)
+            self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=48, scale_stop=32)
+            self.emoji_test = self.dataset.to_torch(split='test', scale_start=64, scale_stop=48)
+        if self.evaluation == 4:  # Train with single scale, evaluate with all other scales
             self.emoji_train = self.dataset.to_torch(split='train', scale_start=64, scale_stop=63)
             self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=64, scale_stop=63)
             self.emoji_test = self.dataset.to_torch(split='test', scale_start=63, scale_stop=32)
+        if self.evaluation == 5:  # Train with single scale, evaluate with all other scales
+            self.emoji_train = self.dataset.to_torch(split='train', scale_start=33, scale_stop=32)
+            self.emoji_valid = self.dataset.to_torch(split='valid', scale_start=33, scale_stop=32)
+            self.emoji_test = self.dataset.to_torch(split='test', scale_start=64, scale_stop=33)
 
     def train_loader(self):
         return DataLoader(self.emoji_train, batch_size=self.batch_size)

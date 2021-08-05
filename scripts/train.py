@@ -6,7 +6,8 @@ optional arguments:
   -h, --help            show this help message and exit
   --model {standard,pixel_pool,slice_pool,conv3d}
                         The model type that should be trained
-  --evaluation {1,2,3}  The evaluation scheme that should be used
+  --evaluation {1,2,3,4,5}
+                        The evaluation scheme that should be used
   --interpolation {nearest,bilinear,bicubic,area}
                         The interpolation technique that should be used
   --seed SEED           The seed used for random initialization
@@ -167,7 +168,7 @@ def main():
     parser.add_argument('--model', help='The model type that should be trained',
                         choices=['standard', 'pixel_pool', 'slice_pool', 'conv3d'], required=True)
     parser.add_argument('--evaluation', help='The evaluation scheme that should be used',
-                        type=int, choices=[1, 2, 3], required=True)
+                        type=int, choices=[1, 2, 3, 4, 5], required=True)
     parser.add_argument('--interpolation', help='The interpolation technique that should be used',
                         choices=['nearest', 'bilinear', 'bicubic', 'area'], required=True)
     parser.add_argument('--seed', help='The seed used for random initialization', type=int, required=True)
