@@ -1,5 +1,3 @@
-from typing import Optional
-
 from torch.utils.data import DataLoader
 from dataset import EmojiDataset
 

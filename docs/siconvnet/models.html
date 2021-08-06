@@ -33,27 +33,22 @@
 This module contains the models presented in the paper.
 &#34;&#34;&#34;
 import numpy as np
-import pytorch_lightning as pl
-import torch.nn.functional as F
 from torch import nn
-from torch.optim import Adam
 
 from siconvnet.layers import SiConv2d, ScalePool
 
 
-class BaseModel(pl.LightningModule):
+class BaseModel(nn.Module):
     &#34;&#34;&#34; Base class for all models.
 
     This model establishes a common baseline for all experiments. More specifically, it applies the cross entropy loss,
     records the training and validation accuracy and configures an Adam optimizer.
     &#34;&#34;&#34;
 
-    def __init__(self):
+    def __init__(self, interpolation):
         &#34;&#34;&#34;&#34;&#34;&#34;
         super().__init__()
-        self.train_acc = pl.metrics.Accuracy()
-        self.val_acc = pl.metrics.Accuracy()
-        self.learning_rate = 1e-2
+        self.interpolation = interpolation
         self.tracing = False
         self.tracing_cache = {}
 
@@ -75,44 +70,15 @@ class BaseModel(pl.LightningModule):
             self.tracing_cache[name] = concat
         return self.tracing_cache
 
-    def training_step(self, batch, batch_idx):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        images, labels = batch
-        output = self.forward(images)
-        loss = F.cross_entropy(output, labels)
-        self.log(&#39;train_loss&#39;, loss, on_epoch=True)
-        self.log(&#39;train_acc_step&#39;, self.train_acc(output.argmax(dim=1), labels))
-        return loss
-
-    def training_epoch_end(self, outs):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        self.log(&#39;train_acc_epoch&#39;, self.train_acc.compute())
-
-    def validation_step(self, batch, batch_idx):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        images, labels = batch
-        output = self.forward(images)
-        loss = F.cross_entropy(output, labels)
-        self.log(&#39;val_loss&#39;, loss, on_epoch=True)
-        self.log(&#39;val_acc_step&#39;, self.val_acc(output.argmax(dim=1), labels))
-
-    def validation_epoch_end(self, outs):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        self.log(&#39;val_acc_epoch&#39;, self.val_acc.compute())
-
-    def configure_optimizers(self):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        return Adam(self.parameters(), lr=self.learning_rate)
-
     def forward(self, x):
         &#34;&#34;&#34;&#34;&#34;&#34;
         pass
 
 
 class StandardModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
+        super().__init__(**kwargs)
         self.conv1 = nn.Conv2d(1, 16, (7, 7))
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv2d(16, 32, (7, 7))
@@ -137,13 +103,13 @@ class StandardModel(BaseModel):
 
 
 class PixelPoolModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode=&#39;pixel&#39;)
         self.act1 = nn.ReLU()
-        self.conv2 = SiConv2d(16, 32, 26, 7)
+        self.conv2 = SiConv2d(16, 32, 26, 7, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode=&#39;pixel&#39;)
         self.act2 = nn.ReLU()
         self.global_pool = nn.MaxPool2d((52, 52))
@@ -168,13 +134,13 @@ class PixelPoolModel(BaseModel):
 
 
 class SlicePoolModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode=&#39;slice&#39;)
         self.act1 = nn.ReLU()
-        self.conv2 = SiConv2d(16, 32, 26, 7)
+        self.conv2 = SiConv2d(16, 32, 26, 7, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode=&#39;slice&#39;)
         self.act2 = nn.ReLU()
         self.global_pool = nn.MaxPool2d((52, 52))
@@ -199,10 +165,10 @@ class SlicePoolModel(BaseModel):
 
 
 class Conv3dModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv3d(16, 32, (5, 5, 5))
         self.act2 = nn.ReLU()
@@ -234,6 +200,7 @@ class Conv3dModel(BaseModel):
 <dl>
 <dt id="siconvnet.models.BaseModel"><code class="flex name class">
 <span>class <span class="ident">BaseModel</span></span>
+<span>(</span><span>interpolation)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for all models.</p>
@@ -243,19 +210,17 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class BaseModel(pl.LightningModule):
+<pre><code class="python">class BaseModel(nn.Module):
     &#34;&#34;&#34; Base class for all models.
 
     This model establishes a common baseline for all experiments. More specifically, it applies the cross entropy loss,
     records the training and validation accuracy and configures an Adam optimizer.
     &#34;&#34;&#34;
 
-    def __init__(self):
+    def __init__(self, interpolation):
         &#34;&#34;&#34;&#34;&#34;&#34;
         super().__init__()
-        self.train_acc = pl.metrics.Accuracy()
-        self.val_acc = pl.metrics.Accuracy()
-        self.learning_rate = 1e-2
+        self.interpolation = interpolation
         self.tracing = False
         self.tracing_cache = {}
 
@@ -277,49 +242,12 @@ records the training and validation accuracy and configures an Adam optimizer.</
             self.tracing_cache[name] = concat
         return self.tracing_cache
 
-    def training_step(self, batch, batch_idx):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        images, labels = batch
-        output = self.forward(images)
-        loss = F.cross_entropy(output, labels)
-        self.log(&#39;train_loss&#39;, loss, on_epoch=True)
-        self.log(&#39;train_acc_step&#39;, self.train_acc(output.argmax(dim=1), labels))
-        return loss
-
-    def training_epoch_end(self, outs):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        self.log(&#39;train_acc_epoch&#39;, self.train_acc.compute())
-
-    def validation_step(self, batch, batch_idx):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        images, labels = batch
-        output = self.forward(images)
-        loss = F.cross_entropy(output, labels)
-        self.log(&#39;val_loss&#39;, loss, on_epoch=True)
-        self.log(&#39;val_acc_step&#39;, self.val_acc(output.argmax(dim=1), labels))
-
-    def validation_epoch_end(self, outs):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        self.log(&#39;val_acc_epoch&#39;, self.val_acc.compute())
-
-    def configure_optimizers(self):
-        &#34;&#34;&#34;&#34;&#34;&#34;
-        return Adam(self.parameters(), lr=self.learning_rate)
-
     def forward(self, x):
         &#34;&#34;&#34;&#34;&#34;&#34;
         pass</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li>pytorch_lightning.core.lightning.LightningModule</li>
-<li>abc.ABC</li>
-<li>pytorch_lightning.utilities.device_dtype_mixin.DeviceDtypeModuleMixin</li>
-<li>pytorch_lightning.core.grads.GradInformation</li>
-<li>pytorch_lightning.core.saving.ModelIO</li>
-<li>pytorch_lightning.core.hooks.ModelHooks</li>
-<li>pytorch_lightning.core.hooks.DataHooks</li>
-<li>pytorch_lightning.core.hooks.CheckpointHooks</li>
 <li>torch.nn.modules.module.Module</li>
 </ul>
 <h3>Subclasses</h3>
@@ -342,20 +270,6 @@ records the training and validation accuracy and configures an Adam optimizer.</
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="siconvnet.models.BaseModel.configure_optimizers"><code class="name flex">
-<span>def <span class="ident">configure_optimizers</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def configure_optimizers(self):
-    &#34;&#34;&#34;&#34;&#34;&#34;
-    return Adam(self.parameters(), lr=self.learning_rate)</code></pre>
-</details>
-</dd>
 <dt id="siconvnet.models.BaseModel.enable_tracing"><code class="name flex">
 <span>def <span class="ident">enable_tracing</span></span>(<span>self)</span>
 </code></dt>
@@ -418,75 +332,11 @@ records the training and validation accuracy and configures an Adam optimizer.</
     self.tracing_cache[name].append(tensor)</code></pre>
 </details>
 </dd>
-<dt id="siconvnet.models.BaseModel.training_epoch_end"><code class="name flex">
-<span>def <span class="ident">training_epoch_end</span></span>(<span>self, outs)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def training_epoch_end(self, outs):
-    &#34;&#34;&#34;&#34;&#34;&#34;
-    self.log(&#39;train_acc_epoch&#39;, self.train_acc.compute())</code></pre>
-</details>
-</dd>
-<dt id="siconvnet.models.BaseModel.training_step"><code class="name flex">
-<span>def <span class="ident">training_step</span></span>(<span>self, batch, batch_idx)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def training_step(self, batch, batch_idx):
-    &#34;&#34;&#34;&#34;&#34;&#34;
-    images, labels = batch
-    output = self.forward(images)
-    loss = F.cross_entropy(output, labels)
-    self.log(&#39;train_loss&#39;, loss, on_epoch=True)
-    self.log(&#39;train_acc_step&#39;, self.train_acc(output.argmax(dim=1), labels))
-    return loss</code></pre>
-</details>
-</dd>
-<dt id="siconvnet.models.BaseModel.validation_epoch_end"><code class="name flex">
-<span>def <span class="ident">validation_epoch_end</span></span>(<span>self, outs)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def validation_epoch_end(self, outs):
-    &#34;&#34;&#34;&#34;&#34;&#34;
-    self.log(&#39;val_acc_epoch&#39;, self.val_acc.compute())</code></pre>
-</details>
-</dd>
-<dt id="siconvnet.models.BaseModel.validation_step"><code class="name flex">
-<span>def <span class="ident">validation_step</span></span>(<span>self, batch, batch_idx)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def validation_step(self, batch, batch_idx):
-    &#34;&#34;&#34;&#34;&#34;&#34;
-    images, labels = batch
-    output = self.forward(images)
-    loss = F.cross_entropy(output, labels)
-    self.log(&#39;val_loss&#39;, loss, on_epoch=True)
-    self.log(&#39;val_acc_step&#39;, self.val_acc(output.argmax(dim=1), labels))</code></pre>
-</details>
-</dd>
 </dl>
 </dd>
 <dt id="siconvnet.models.Conv3dModel"><code class="flex name class">
 <span>class <span class="ident">Conv3dModel</span></span>
+<span>(</span><span>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for all models.</p>
@@ -497,10 +347,10 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Conv3dModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv3d(16, 32, (5, 5, 5))
         self.act2 = nn.ReLU()
@@ -523,14 +373,6 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="siconvnet.models.BaseModel" href="#siconvnet.models.BaseModel">BaseModel</a></li>
-<li>pytorch_lightning.core.lightning.LightningModule</li>
-<li>abc.ABC</li>
-<li>pytorch_lightning.utilities.device_dtype_mixin.DeviceDtypeModuleMixin</li>
-<li>pytorch_lightning.core.grads.GradInformation</li>
-<li>pytorch_lightning.core.saving.ModelIO</li>
-<li>pytorch_lightning.core.hooks.ModelHooks</li>
-<li>pytorch_lightning.core.hooks.DataHooks</li>
-<li>pytorch_lightning.core.hooks.CheckpointHooks</li>
 <li>torch.nn.modules.module.Module</li>
 </ul>
 <h3>Class variables</h3>
@@ -573,6 +415,7 @@ records the training and validation accuracy and configures an Adam optimizer.</
 </dd>
 <dt id="siconvnet.models.PixelPoolModel"><code class="flex name class">
 <span>class <span class="ident">PixelPoolModel</span></span>
+<span>(</span><span>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for all models.</p>
@@ -583,13 +426,13 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PixelPoolModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode=&#39;pixel&#39;)
         self.act1 = nn.ReLU()
-        self.conv2 = SiConv2d(16, 32, 26, 7)
+        self.conv2 = SiConv2d(16, 32, 26, 7, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode=&#39;pixel&#39;)
         self.act2 = nn.ReLU()
         self.global_pool = nn.MaxPool2d((52, 52))
@@ -615,14 +458,6 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="siconvnet.models.BaseModel" href="#siconvnet.models.BaseModel">BaseModel</a></li>
-<li>pytorch_lightning.core.lightning.LightningModule</li>
-<li>abc.ABC</li>
-<li>pytorch_lightning.utilities.device_dtype_mixin.DeviceDtypeModuleMixin</li>
-<li>pytorch_lightning.core.grads.GradInformation</li>
-<li>pytorch_lightning.core.saving.ModelIO</li>
-<li>pytorch_lightning.core.hooks.ModelHooks</li>
-<li>pytorch_lightning.core.hooks.DataHooks</li>
-<li>pytorch_lightning.core.hooks.CheckpointHooks</li>
 <li>torch.nn.modules.module.Module</li>
 </ul>
 <h3>Class variables</h3>
@@ -669,6 +504,7 @@ records the training and validation accuracy and configures an Adam optimizer.</
 </dd>
 <dt id="siconvnet.models.SlicePoolModel"><code class="flex name class">
 <span>class <span class="ident">SlicePoolModel</span></span>
+<span>(</span><span>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for all models.</p>
@@ -679,13 +515,13 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class SlicePoolModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
-        self.conv1 = SiConv2d(1, 16, 29, 7)
+        super().__init__(**kwargs)
+        self.conv1 = SiConv2d(1, 16, 29, 7, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode=&#39;slice&#39;)
         self.act1 = nn.ReLU()
-        self.conv2 = SiConv2d(16, 32, 26, 7)
+        self.conv2 = SiConv2d(16, 32, 26, 7, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode=&#39;slice&#39;)
         self.act2 = nn.ReLU()
         self.global_pool = nn.MaxPool2d((52, 52))
@@ -711,14 +547,6 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="siconvnet.models.BaseModel" href="#siconvnet.models.BaseModel">BaseModel</a></li>
-<li>pytorch_lightning.core.lightning.LightningModule</li>
-<li>abc.ABC</li>
-<li>pytorch_lightning.utilities.device_dtype_mixin.DeviceDtypeModuleMixin</li>
-<li>pytorch_lightning.core.grads.GradInformation</li>
-<li>pytorch_lightning.core.saving.ModelIO</li>
-<li>pytorch_lightning.core.hooks.ModelHooks</li>
-<li>pytorch_lightning.core.hooks.DataHooks</li>
-<li>pytorch_lightning.core.hooks.CheckpointHooks</li>
 <li>torch.nn.modules.module.Module</li>
 </ul>
 <h3>Class variables</h3>
@@ -765,6 +593,7 @@ records the training and validation accuracy and configures an Adam optimizer.</
 </dd>
 <dt id="siconvnet.models.StandardModel"><code class="flex name class">
 <span>class <span class="ident">StandardModel</span></span>
+<span>(</span><span>**kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for all models.</p>
@@ -775,9 +604,9 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class StandardModel(BaseModel):
-    def __init__(self):
+    def __init__(self, **kwargs):
         &#34;&#34;&#34;&#34;&#34;&#34;
-        super().__init__()
+        super().__init__(**kwargs)
         self.conv1 = nn.Conv2d(1, 16, (7, 7))
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv2d(16, 32, (7, 7))
@@ -803,14 +632,6 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="siconvnet.models.BaseModel" href="#siconvnet.models.BaseModel">BaseModel</a></li>
-<li>pytorch_lightning.core.lightning.LightningModule</li>
-<li>abc.ABC</li>
-<li>pytorch_lightning.utilities.device_dtype_mixin.DeviceDtypeModuleMixin</li>
-<li>pytorch_lightning.core.grads.GradInformation</li>
-<li>pytorch_lightning.core.saving.ModelIO</li>
-<li>pytorch_lightning.core.hooks.ModelHooks</li>
-<li>pytorch_lightning.core.hooks.DataHooks</li>
-<li>pytorch_lightning.core.hooks.CheckpointHooks</li>
 <li>torch.nn.modules.module.Module</li>
 </ul>
 <h3>Class variables</h3>
@@ -871,18 +692,13 @@ records the training and validation accuracy and configures an Adam optimizer.</
 <ul>
 <li>
 <h4><code><a title="siconvnet.models.BaseModel" href="#siconvnet.models.BaseModel">BaseModel</a></code></h4>
-<ul class="">
-<li><code><a title="siconvnet.models.BaseModel.configure_optimizers" href="#siconvnet.models.BaseModel.configure_optimizers">configure_optimizers</a></code></li>
+<ul class="two-column">
 <li><code><a title="siconvnet.models.BaseModel.dump_patches" href="#siconvnet.models.BaseModel.dump_patches">dump_patches</a></code></li>
 <li><code><a title="siconvnet.models.BaseModel.enable_tracing" href="#siconvnet.models.BaseModel.enable_tracing">enable_tracing</a></code></li>
 <li><code><a title="siconvnet.models.BaseModel.forward" href="#siconvnet.models.BaseModel.forward">forward</a></code></li>
 <li><code><a title="siconvnet.models.BaseModel.get_traces" href="#siconvnet.models.BaseModel.get_traces">get_traces</a></code></li>
 <li><code><a title="siconvnet.models.BaseModel.save_trace" href="#siconvnet.models.BaseModel.save_trace">save_trace</a></code></li>
 <li><code><a title="siconvnet.models.BaseModel.training" href="#siconvnet.models.BaseModel.training">training</a></code></li>
-<li><code><a title="siconvnet.models.BaseModel.training_epoch_end" href="#siconvnet.models.BaseModel.training_epoch_end">training_epoch_end</a></code></li>
-<li><code><a title="siconvnet.models.BaseModel.training_step" href="#siconvnet.models.BaseModel.training_step">training_step</a></code></li>
-<li><code><a title="siconvnet.models.BaseModel.validation_epoch_end" href="#siconvnet.models.BaseModel.validation_epoch_end">validation_epoch_end</a></code></li>
-<li><code><a title="siconvnet.models.BaseModel.validation_step" href="#siconvnet.models.BaseModel.validation_step">validation_step</a></code></li>
 </ul>
 </li>
 <li>

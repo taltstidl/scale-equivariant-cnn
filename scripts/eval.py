@@ -11,7 +11,6 @@ import os.path
 from copy import deepcopy
 
 import numpy as np
-import pytorch_lightning as pl
 import torch
 
 from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, Conv3dModel

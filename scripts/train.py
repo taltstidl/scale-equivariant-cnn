@@ -2,7 +2,7 @@
 
 Command-line interface for training models.
 
-This supports the following hyperparameters:
+This supports the following parameters:
 
 | Name          | Values                                | Description                                     |
 | ============= | ===================================== | =============================================== |
@@ -76,6 +76,7 @@ class Record:
         run_id = mlflow.active_run().info.run_id
         os.makedirs(os.path.join('temp', run_id), exist_ok=True)
         self.model_path = os.path.join('temp', run_id, 'model.pt')
+        self.prediction_path = os.path.join('temp', run_id, 'prediction.npy')
 
     def track(self, net, accuracy):
         if accuracy > self.best_accuracy:
@@ -91,6 +92,9 @@ class Record:
 
     def get_model_path(self):
         return self.model_path
+
+    def get_prediction_path(self):
+        return self.prediction_path
 
 
 def seed_everything(seed):
@@ -150,17 +154,22 @@ def train(net, data):
     # Compute testing loss and accuracy
     metrics = Metrics()
     with torch.no_grad():
+        prediction_all = []
         net.eval()
         for image_batch, label_batch in data.test_loader():
             prediction_batch = net(image_batch)
             loss = criterion(prediction_batch, label_batch)
             metrics.compute(loss, prediction_batch, label_batch)
+            prediction_all.append(prediction_batch.argmax(dim=1).detach().cpu().numpy())
+        np.save(record.get_prediction_path(), np.concatenate(prediction_all))
+    mlflow.log_artifact(record.get_prediction_path())
     # Log validation loss and accuracy
     mlflow.log_metric('test_loss', metrics.get_epoch_loss())
     mlflow.log_metric('test_acc', metrics.get_epoch_accuracy())
 
 
 def main():
+    mlflow.set_experiment('hyperparam')
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',

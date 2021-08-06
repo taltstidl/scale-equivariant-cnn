@@ -29,12 +29,11 @@
 </summary>
 <pre><code class="python">from typing import Optional
 
-import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from dataset import EmojiDataset
 
 
-class EmojiDataModule(pl.LightningDataModule):
+class EmojiDataModule:
     &#34;&#34;&#34; Emoji data module.
 
     Parameters
@@ -49,12 +48,10 @@ class EmojiDataModule(pl.LightningDataModule):
         super().__init__()
         self.batch_size = batch_size
         self.evaluation = evaluation
-
-    def prepare_data(self):
-        pass  # No data preparation required
-
-    def setup(self, stage: Optional[str] = None):
         self.dataset = EmojiDataset()
+        self.split_dataset()
+
+    def split_dataset(self):
         if self.evaluation == 1:  # Train on all scales, evaluate on all scales
             self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=32)
             self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=32)
@@ -63,22 +60,32 @@ class EmojiDataModule(pl.LightningDataModule):
             self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=48)
             self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=48)
             self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=48, scale_stop=32)
-        if self.evaluation == 3:  # Train with single scale, evaluate with all other scales
+        if self.evaluation == 3:  # Train on half the scales, evaluate on other half
+            self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=48, scale_stop=32)
+            self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=48, scale_stop=32)
+            self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=64, scale_stop=48)
+        if self.evaluation == 4:  # Train with single scale, evaluate with all other scales
             self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=63)
             self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=63)
             self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=63, scale_stop=32)
+        if self.evaluation == 5:  # Train with single scale, evaluate with all other scales
+            self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=33, scale_stop=32)
+            self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=33, scale_stop=32)
+            self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=64, scale_stop=33)
 
-    def train_dataloader(self):
+    def train_loader(self):
         return DataLoader(self.emoji_train, batch_size=self.batch_size)
 
-    def val_dataloader(self):
+    def valid_loader(self):
         return DataLoader(self.emoji_valid, batch_size=self.batch_size)
 
-    def test_dataloader(self):
+    def test_loader(self):
         return DataLoader(self.emoji_test, batch_size=self.batch_size)
 
-    def predict_dataloader(self):
-        return self.test_dataloader()</code></pre>
+    def to(self, device):
+        self.emoji_train.tensors = [t.to(device) for t in self.emoji_train.tensors]
+        self.emoji_valid.tensors = [t.to(device) for t in self.emoji_valid.tensors]
+        self.emoji_test.tensors = [t.to(device) for t in self.emoji_test.tensors]</code></pre>
 </details>
 </section>
 <section>
@@ -108,7 +115,7 @@ participate in training and in testing.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class EmojiDataModule(pl.LightningDataModule):
+<pre><code class="python">class EmojiDataModule:
     &#34;&#34;&#34; Emoji data module.
 
     Parameters
@@ -123,12 +130,10 @@ participate in training and in testing.</dd>
         super().__init__()
         self.batch_size = batch_size
         self.evaluation = evaluation
-
-    def prepare_data(self):
-        pass  # No data preparation required
-
-    def setup(self, stage: Optional[str] = None):
         self.dataset = EmojiDataset()
+        self.split_dataset()
+
+    def split_dataset(self):
         if self.evaluation == 1:  # Train on all scales, evaluate on all scales
             self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=32)
             self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=32)
@@ -137,120 +142,37 @@ participate in training and in testing.</dd>
             self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=48)
             self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=48)
             self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=48, scale_stop=32)
-        if self.evaluation == 3:  # Train with single scale, evaluate with all other scales
+        if self.evaluation == 3:  # Train on half the scales, evaluate on other half
+            self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=48, scale_stop=32)
+            self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=48, scale_stop=32)
+            self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=64, scale_stop=48)
+        if self.evaluation == 4:  # Train with single scale, evaluate with all other scales
             self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=63)
             self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=63)
             self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=63, scale_stop=32)
+        if self.evaluation == 5:  # Train with single scale, evaluate with all other scales
+            self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=33, scale_stop=32)
+            self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=33, scale_stop=32)
+            self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=64, scale_stop=33)
 
-    def train_dataloader(self):
+    def train_loader(self):
         return DataLoader(self.emoji_train, batch_size=self.batch_size)
 
-    def val_dataloader(self):
+    def valid_loader(self):
         return DataLoader(self.emoji_valid, batch_size=self.batch_size)
 
-    def test_dataloader(self):
+    def test_loader(self):
         return DataLoader(self.emoji_test, batch_size=self.batch_size)
 
-    def predict_dataloader(self):
-        return self.test_dataloader()</code></pre>
+    def to(self, device):
+        self.emoji_train.tensors = [t.to(device) for t in self.emoji_train.tensors]
+        self.emoji_valid.tensors = [t.to(device) for t in self.emoji_valid.tensors]
+        self.emoji_test.tensors = [t.to(device) for t in self.emoji_test.tensors]</code></pre>
 </details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>pytorch_lightning.core.datamodule.LightningDataModule</li>
-<li>pytorch_lightning.core.hooks.CheckpointHooks</li>
-<li>pytorch_lightning.core.hooks.DataHooks</li>
-</ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="siconvnet.data.EmojiDataModule.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
-<dt id="siconvnet.data.EmojiDataModule.predict_dataloader"><code class="name flex">
-<span>def <span class="ident">predict_dataloader</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Implement one or multiple PyTorch DataLoaders for prediction.</p>
-<p>It's recommended that all data downloads and preparation happen in :meth:<code>prepare_data</code>.</p>
-<ul>
-<li>:meth:<code>~pytorch_lightning.trainer.Trainer.fit</code></li>
-<li>&hellip;</li>
-<li>:meth:<code>prepare_data</code></li>
-<li>:meth:<code>train_dataloader</code></li>
-<li>:meth:<code>val_dataloader</code></li>
-<li>:meth:<code>test_dataloader</code></li>
-</ul>
-<h2 id="note">Note</h2>
-<p>Lightning adds the correct sampler for distributed and arbitrary hardware
-There is no need to set it yourself.</p>
-<h2 id="return">Return</h2>
-<p>Single or multiple PyTorch DataLoaders.</p>
-<h2 id="note_1">Note</h2>
-<p>In the case where you return multiple prediction dataloaders, the :meth:<code>predict</code>
-will have an argument <code>dataloader_idx</code> which matches the order here.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def predict_dataloader(self):
-    return self.test_dataloader()</code></pre>
-</details>
-</dd>
-<dt id="siconvnet.data.EmojiDataModule.prepare_data"><code class="name flex">
-<span>def <span class="ident">prepare_data</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Use this to download and prepare data.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning:&ensp;DO NOT set state to the model (use <code>setup</code> instead)</p>
-<p>since this is NOT called on every GPU in DDP/TPU</p>
-</div>
-<p>Example::</p>
-<pre><code>def prepare_data(self):
-    # good
-    download_data()
-    tokenize()
-    etc()
-
-    # bad
-    self.split = data_split
-    self.some_state = some_other_state()
-</code></pre>
-<p>In DDP prepare_data can be called in two ways (using Trainer(prepare_data_per_node)):</p>
-<ol>
-<li>Once per node. This is the default and is only called on LOCAL_RANK=0.</li>
-<li>Once in total. Only called on GLOBAL_RANK=0.</li>
-</ol>
-<p>Example::</p>
-<pre><code># DEFAULT
-# called once per node on LOCAL_RANK=0 of that node
-Trainer(prepare_data_per_node=True)
-
-# call on GLOBAL_RANK=0 (great for shared file systems)
-Trainer(prepare_data_per_node=False)
-</code></pre>
-<p>This is called before requesting the dataloaders:</p>
-<p>.. code-block:: python</p>
-<pre><code>model.prepare_data()
-    if ddp/tpu: init()
-model.setup(stage)
-model.train_dataloader()
-model.val_dataloader()
-model.test_dataloader()
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def prepare_data(self):
-    pass  # No data preparation required</code></pre>
-</details>
-</dd>
-<dt id="siconvnet.data.EmojiDataModule.setup"><code class="name flex">
-<span>def <span class="ident">setup</span></span>(<span>self, stage: Union[str, NoneType] = None)</span>
+<dt id="siconvnet.data.EmojiDataModule.split_dataset"><code class="name flex">
+<span>def <span class="ident">split_dataset</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -258,8 +180,7 @@ model.test_dataloader()
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def setup(self, stage: Optional[str] = None):
-    self.dataset = EmojiDataset()
+<pre><code class="python">def split_dataset(self):
     if self.evaluation == 1:  # Train on all scales, evaluate on all scales
         self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=32)
         self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=32)
@@ -268,200 +189,71 @@ model.test_dataloader()
         self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=48)
         self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=48)
         self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=48, scale_stop=32)
-    if self.evaluation == 3:  # Train with single scale, evaluate with all other scales
+    if self.evaluation == 3:  # Train on half the scales, evaluate on other half
+        self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=48, scale_stop=32)
+        self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=48, scale_stop=32)
+        self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=64, scale_stop=48)
+    if self.evaluation == 4:  # Train with single scale, evaluate with all other scales
         self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=64, scale_stop=63)
         self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=64, scale_stop=63)
-        self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=63, scale_stop=32)</code></pre>
+        self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=63, scale_stop=32)
+    if self.evaluation == 5:  # Train with single scale, evaluate with all other scales
+        self.emoji_train = self.dataset.to_torch(split=&#39;train&#39;, scale_start=33, scale_stop=32)
+        self.emoji_valid = self.dataset.to_torch(split=&#39;valid&#39;, scale_start=33, scale_stop=32)
+        self.emoji_test = self.dataset.to_torch(split=&#39;test&#39;, scale_start=64, scale_stop=33)</code></pre>
 </details>
 </dd>
-<dt id="siconvnet.data.EmojiDataModule.test_dataloader"><code class="name flex">
-<span>def <span class="ident">test_dataloader</span></span>(<span>self)</span>
+<dt id="siconvnet.data.EmojiDataModule.test_loader"><code class="name flex">
+<span>def <span class="ident">test_loader</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Implement one or multiple PyTorch DataLoaders for testing.</p>
-<p>The dataloader you return will not be called every epoch unless you set
-:paramref:<code>~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_epoch</code> to <code>True</code>.</p>
-<p>For data processing use the following pattern:</p>
-<pre><code>- download in :meth:&lt;code&gt;prepare\_data&lt;/code&gt;
-- process and split in :meth:&lt;code&gt;setup&lt;/code&gt;
-</code></pre>
-<p>However, the above are only necessary for distributed processing.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning:&ensp;do not assign state in prepare_data</p>
-</div>
-<ul>
-<li>:meth:<code>~pytorch_lightning.trainer.Trainer.fit</code></li>
-<li>&hellip;</li>
-<li>:meth:<code>prepare_data</code></li>
-<li>:meth:<code>setup</code></li>
-<li>:meth:<code>train_dataloader</code></li>
-<li>:meth:<code>val_dataloader</code></li>
-<li>:meth:<code>test_dataloader</code></li>
-</ul>
-<h2 id="note">Note</h2>
-<p>Lightning adds the correct sampler for distributed and arbitrary hardware.
-There is no need to set it yourself.</p>
-<h2 id="return">Return</h2>
-<p>Single or multiple PyTorch DataLoaders.</p>
-<p>Example::</p>
-<pre><code>def test_dataloader(self):
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize((0.5,), (1.0,))])
-    dataset = MNIST(root='/path/to/mnist/', train=False, transform=transform,
-                    download=True)
-    loader = torch.utils.data.DataLoader(
-        dataset=dataset,
-        batch_size=self.batch_size,
-        shuffle=False
-    )
-
-    return loader
-
-# can also return multiple dataloaders
-def test_dataloader(self):
-    return [loader_a, loader_b, ..., loader_n]
-</code></pre>
-<h2 id="note_1">Note</h2>
-<p>If you don't need a test dataset and a :meth:<code>test_step</code>, you don't need to implement
-this method.</p>
-<h2 id="note_2">Note</h2>
-<p>In the case where you return multiple test dataloaders, the :meth:<code>test_step</code>
-will have an argument <code>dataloader_idx</code> which matches the order here.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_dataloader(self):
+<pre><code class="python">def test_loader(self):
     return DataLoader(self.emoji_test, batch_size=self.batch_size)</code></pre>
 </details>
 </dd>
-<dt id="siconvnet.data.EmojiDataModule.train_dataloader"><code class="name flex">
-<span>def <span class="ident">train_dataloader</span></span>(<span>self)</span>
+<dt id="siconvnet.data.EmojiDataModule.to"><code class="name flex">
+<span>def <span class="ident">to</span></span>(<span>self, device)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Implement one or more PyTorch DataLoaders for training.</p>
-<h2 id="return">Return</h2>
-<p>Either a single PyTorch :class:<code>~torch.utils.data.DataLoader</code> or a collection of these
-(list, dict, nested lists and dicts). In the case of multiple dataloaders, please see
-this :ref:<code>page &lt;multiple-training-dataloaders&gt;</code></p>
-<p>The dataloader you return will not be called every epoch unless you set
-:paramref:<code>~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_epoch</code> to <code>True</code>.</p>
-<p>For data processing use the following pattern:</p>
-<pre><code>- download in :meth:&lt;code&gt;prepare\_data&lt;/code&gt;
-- process and split in :meth:&lt;code&gt;setup&lt;/code&gt;
-</code></pre>
-<p>However, the above are only necessary for distributed processing.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning:&ensp;do not assign state in prepare_data</p>
-</div>
-<ul>
-<li>:meth:<code>~pytorch_lightning.trainer.Trainer.fit</code></li>
-<li>&hellip;</li>
-<li>:meth:<code>prepare_data</code></li>
-<li>:meth:<code>setup</code></li>
-<li>:meth:<code>train_dataloader</code></li>
-</ul>
-<h2 id="note">Note</h2>
-<p>Lightning adds the correct sampler for distributed and arbitrary hardware.
-There is no need to set it yourself.</p>
-<p>Example::</p>
-<pre><code># single dataloader
-def train_dataloader(self):
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize((0.5,), (1.0,))])
-    dataset = MNIST(root='/path/to/mnist/', train=True, transform=transform,
-                    download=True)
-    loader = torch.utils.data.DataLoader(
-        dataset=dataset,
-        batch_size=self.batch_size,
-        shuffle=True
-    )
-    return loader
-
-# multiple dataloaders, return as list
-def train_dataloader(self):
-    mnist = MNIST(...)
-    cifar = CIFAR(...)
-    mnist_loader = torch.utils.data.DataLoader(
-        dataset=mnist, batch_size=self.batch_size, shuffle=True
-    )
-    cifar_loader = torch.utils.data.DataLoader(
-        dataset=cifar, batch_size=self.batch_size, shuffle=True
-    )
-    # each batch will be a list of tensors: [batch_mnist, batch_cifar]
-    return [mnist_loader, cifar_loader]
-
-# multiple dataloader, return as dict
-def train_dataloader(self):
-    mnist = MNIST(...)
-    cifar = CIFAR(...)
-    mnist_loader = torch.utils.data.DataLoader(
-        dataset=mnist, batch_size=self.batch_size, shuffle=True
-    )
-    cifar_loader = torch.utils.data.DataLoader(
-        dataset=cifar, batch_size=self.batch_size, shuffle=True
-    )
-    # each batch will be a dict of tensors: {'mnist': batch_mnist, 'cifar': batch_cifar}
-    return {'mnist': mnist_loader, 'cifar': cifar_loader}
-</code></pre></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def train_dataloader(self):
+<pre><code class="python">def to(self, device):
+    self.emoji_train.tensors = [t.to(device) for t in self.emoji_train.tensors]
+    self.emoji_valid.tensors = [t.to(device) for t in self.emoji_valid.tensors]
+    self.emoji_test.tensors = [t.to(device) for t in self.emoji_test.tensors]</code></pre>
+</details>
+</dd>
+<dt id="siconvnet.data.EmojiDataModule.train_loader"><code class="name flex">
+<span>def <span class="ident">train_loader</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def train_loader(self):
     return DataLoader(self.emoji_train, batch_size=self.batch_size)</code></pre>
 </details>
 </dd>
-<dt id="siconvnet.data.EmojiDataModule.val_dataloader"><code class="name flex">
-<span>def <span class="ident">val_dataloader</span></span>(<span>self)</span>
+<dt id="siconvnet.data.EmojiDataModule.valid_loader"><code class="name flex">
+<span>def <span class="ident">valid_loader</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Implement one or multiple PyTorch DataLoaders for validation.</p>
-<p>The dataloader you return will not be called every epoch unless you set
-:paramref:<code>~pytorch_lightning.trainer.Trainer.reload_dataloaders_every_epoch</code> to <code>True</code>.</p>
-<p>It's recommended that all data downloads and preparation happen in :meth:<code>prepare_data</code>.</p>
-<ul>
-<li>:meth:<code>~pytorch_lightning.trainer.Trainer.fit</code></li>
-<li>&hellip;</li>
-<li>:meth:<code>prepare_data</code></li>
-<li>:meth:<code>train_dataloader</code></li>
-<li>:meth:<code>val_dataloader</code></li>
-<li>:meth:<code>test_dataloader</code></li>
-</ul>
-<h2 id="note">Note</h2>
-<p>Lightning adds the correct sampler for distributed and arbitrary hardware
-There is no need to set it yourself.</p>
-<h2 id="return">Return</h2>
-<p>Single or multiple PyTorch DataLoaders.</p>
-<p>Examples::</p>
-<pre><code>def val_dataloader(self):
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize((0.5,), (1.0,))])
-    dataset = MNIST(root='/path/to/mnist/', train=False,
-                    transform=transform, download=True)
-    loader = torch.utils.data.DataLoader(
-        dataset=dataset,
-        batch_size=self.batch_size,
-        shuffle=False
-    )
-
-    return loader
-
-# can also return multiple dataloaders
-def val_dataloader(self):
-    return [loader_a, loader_b, ..., loader_n]
-</code></pre>
-<h2 id="note_1">Note</h2>
-<p>If you don't need a validation dataset and a :meth:<code>validation_step</code>, you don't need to
-implement this method.</p>
-<h2 id="note_2">Note</h2>
-<p>In the case where you return multiple validation dataloaders, the :meth:<code>validation_step</code>
-will have an argument <code>dataloader_idx</code> which matches the order here.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def val_dataloader(self):
+<pre><code class="python">def valid_loader(self):
     return DataLoader(self.emoji_valid, batch_size=self.batch_size)</code></pre>
 </details>
 </dd>
@@ -485,14 +277,12 @@ will have an argument <code>dataloader_idx</code> which matches the order here.<
 <ul>
 <li>
 <h4><code><a title="siconvnet.data.EmojiDataModule" href="#siconvnet.data.EmojiDataModule">EmojiDataModule</a></code></h4>
-<ul class="two-column">
-<li><code><a title="siconvnet.data.EmojiDataModule.name" href="#siconvnet.data.EmojiDataModule.name">name</a></code></li>
-<li><code><a title="siconvnet.data.EmojiDataModule.predict_dataloader" href="#siconvnet.data.EmojiDataModule.predict_dataloader">predict_dataloader</a></code></li>
-<li><code><a title="siconvnet.data.EmojiDataModule.prepare_data" href="#siconvnet.data.EmojiDataModule.prepare_data">prepare_data</a></code></li>
-<li><code><a title="siconvnet.data.EmojiDataModule.setup" href="#siconvnet.data.EmojiDataModule.setup">setup</a></code></li>
-<li><code><a title="siconvnet.data.EmojiDataModule.test_dataloader" href="#siconvnet.data.EmojiDataModule.test_dataloader">test_dataloader</a></code></li>
-<li><code><a title="siconvnet.data.EmojiDataModule.train_dataloader" href="#siconvnet.data.EmojiDataModule.train_dataloader">train_dataloader</a></code></li>
-<li><code><a title="siconvnet.data.EmojiDataModule.val_dataloader" href="#siconvnet.data.EmojiDataModule.val_dataloader">val_dataloader</a></code></li>
+<ul class="">
+<li><code><a title="siconvnet.data.EmojiDataModule.split_dataset" href="#siconvnet.data.EmojiDataModule.split_dataset">split_dataset</a></code></li>
+<li><code><a title="siconvnet.data.EmojiDataModule.test_loader" href="#siconvnet.data.EmojiDataModule.test_loader">test_loader</a></code></li>
+<li><code><a title="siconvnet.data.EmojiDataModule.to" href="#siconvnet.data.EmojiDataModule.to">to</a></code></li>
+<li><code><a title="siconvnet.data.EmojiDataModule.train_loader" href="#siconvnet.data.EmojiDataModule.train_loader">train_loader</a></code></li>
+<li><code><a title="siconvnet.data.EmojiDataModule.valid_loader" href="#siconvnet.data.EmojiDataModule.valid_loader">valid_loader</a></code></li>
 </ul>
 </li>
 </ul>
