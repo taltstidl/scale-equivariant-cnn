@@ -247,3 +247,34 @@ class ScalePool(nn.Module):
             _, act_index = F.max_pool3d(x, kernel_size=(num_scales, height, width), return_indices=True)
             indices = act_index.repeat(1, 1, 1, height, width) // (height * width)
             return x.gather(dim=-3, index=indices).squeeze(dim=-3)
+
+
+class GlobalMaxPool(nn.Module):
+    """ Global maximum pooling layer.
+
+    Unlike a standard maximum pooling layer, the pooling is applied globally such that the kernel size equals the input
+    size. This leads to a single maximum value per channel. Subsequent dimensions are automatically squeezed.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x):
+        """ Performs global maximum pooling on the input.
+
+        Parameters
+        ----------
+        x: torch.Tensor
+            Feature maps that should be pooled, of shape (mini_batch, in_channels, *dims)
+
+        Returns
+        -------
+        torch.Tensor
+            Pooled maximum value per channel, of shape (mini_batch, in_channels)
+        """
+        dims = x.shape[2:]  # Shape of remaining dimensions
+        num_dims = len(dims)  # Number of remaining dimensions
+        x = F.max_pool2d(x, kernel_size=dims) if num_dims == 2 else F.max_pool3d(x, kernel_size=dims)
+        for _ in range(num_dims):
+            x = x.squeeze(dim=-1)
+        return x

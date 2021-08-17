@@ -144,9 +144,8 @@ cython_debug/
 # Batch scripts
 *.bat
 
-# Training and evaluation sessions
-sessions*/
-lightning_logs/
+# MLflow tracking server
+mlruns/
 
 # PyCharm settings
 .idea/

@@ -104,7 +104,7 @@ def seed_everything(seed):
     torch.manual_seed(seed)
 
 
-def train(net, data):
+def train(net, data, lr):
     """ Train a network with training and validation data. """
     # Find the appropriate device (either GPU or CPU depending on availability)
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -112,11 +112,11 @@ def train(net, data):
     data.to(device)
     # Define loss criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=1e-2)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     # Loop over maximum number of epochs
     timer = Timer()
     record = Record()
-    for epoch in range(100):
+    for epoch in range(200):
         # Loop over each batch
         metrics = Metrics()
         timer.start()
@@ -176,14 +176,20 @@ def main():
                         choices=['standard', 'pixel_pool', 'slice_pool', 'conv3d'], required=True)
     parser.add_argument('--evaluation', help='The evaluation scheme that should be used',
                         type=int, choices=[1, 2, 3, 4, 5], required=True)
+    parser.add_argument('--kernel-size', help='The height and the width of the kernel that should be used',
+                        type=int, choices=[3, 7, 11, 15], required=True)
     parser.add_argument('--interpolation', help='The interpolation technique that should be used',
                         choices=['nearest', 'bilinear', 'bicubic', 'area'], required=True)
+    parser.add_argument('--learning-rate', help='The learning rate used by the Adam optimizer',
+                        type=float, choices=[1e-2, 1e-3], required=True)
     parser.add_argument('--seed', help='The seed used for random initialization', type=int, required=True)
     args = parser.parse_args()
     # Log parameters
     mlflow.log_param('model', args.model)
     mlflow.log_param('evaluation', args.evaluation)
+    mlflow.log_param('kernel_size', args.kernel_size)
     mlflow.log_param('interpolation', args.interpolation)
+    mlflow.log_param('learning_rate', args.learning_rate)
     mlflow.log_param('seed', args.seed)
     # Set seed for reproducibility
     seed_everything(args.seed)
@@ -194,10 +200,10 @@ def main():
         'slice_pool': SlicePoolModel,
         'conv3d': Conv3dModel
     }
-    network = network_map[args.model](interpolation=args.interpolation)
+    network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation)
     data = EmojiDataModule(batch_size=16, evaluation=args.evaluation)
     # Train the network with the given data
-    train(network, data)
+    train(network, data, lr=args.learning_rate)
 
 
 if __name__ == '__main__':
