@@ -6,7 +6,6 @@ evaluations=( 1 2 3 4 5 )
 kernel_sizes=( 3 7 11 15 )
 interpolations=( "nearest" "bilinear" "bicubic" "area" )
 learning_rates=( 1e-2 1e-3 )
-seeds=( $(seq 1 50) )
 
 for model in "${models[@]}"
 do
@@ -18,10 +17,7 @@ do
       do
         for learning_rate in "${learning_rates[@]}"
         do
-          for seed in "${seeds[@]}"
-          do
-            sbatch train.sh $model $evaluation $kernel_size $interpolation $learning_rate $seed
-          done
+          sbatch train.sh $model $evaluation $kernel_size $interpolation $learning_rate
         done
       done
     done
