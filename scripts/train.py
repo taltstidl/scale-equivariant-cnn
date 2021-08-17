@@ -180,7 +180,7 @@ def main():
                         type=int, choices=[3, 7, 11, 15], required=True)
     parser.add_argument('--interpolation', help='The interpolation technique that should be used',
                         choices=['nearest', 'bilinear', 'bicubic', 'area'], required=True)
-    parser.add_argument('--learning-rate', help='The learning rate used by the Adam optimizer',
+    parser.add_argument('--lr', help='The learning rate used by the Adam optimizer',
                         type=float, choices=[1e-2, 1e-3], required=True)
     parser.add_argument('--seed', help='The seed used for random initialization', type=int, required=True)
     args = parser.parse_args()
@@ -189,7 +189,7 @@ def main():
     mlflow.log_param('evaluation', args.evaluation)
     mlflow.log_param('kernel_size', args.kernel_size)
     mlflow.log_param('interpolation', args.interpolation)
-    mlflow.log_param('learning_rate', args.learning_rate)
+    mlflow.log_param('lr', args.lr)
     mlflow.log_param('seed', args.seed)
     # Set seed for reproducibility
     seed_everything(args.seed)
@@ -203,7 +203,7 @@ def main():
     network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation)
     data = EmojiDataModule(batch_size=16, evaluation=args.evaluation)
     # Train the network with the given data
-    train(network, data, lr=args.learning_rate)
+    train(network, data, lr=args.lr)
 
 
 if __name__ == '__main__':

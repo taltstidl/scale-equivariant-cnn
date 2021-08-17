@@ -3,10 +3,10 @@
 
 models=( "standard" "pixel_pool" "slice_pool" "conv3d" )
 evaluations=( 1 2 3 4 5 )
-kernel_sizes = ( 3 7 11 15 )
+kernel_sizes=( 3 7 11 15 )
 interpolations=( "nearest" "bilinear" "bicubic" "area" )
-learning_rates = { 1..50 }
-seeds=( 42 88 38 52 26 )
+learning_rates=( 1e-2 1e-3 )
+seeds=( $(seq 1 50) )
 
 for model in "${models[@]}"
 do
