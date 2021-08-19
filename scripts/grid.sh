@@ -5,7 +5,6 @@ models=( "standard" "pixel_pool" "slice_pool" "conv3d" )
 evaluations=( 1 2 3 4 5 )
 kernel_sizes=( 3 7 11 15 )
 interpolations=( "nearest" "bilinear" "bicubic" "area" )
-learning_rates=( 1e-2 1e-3 )
 
 for model in "${models[@]}"
 do
@@ -15,10 +14,7 @@ do
     do
       for interpolation in "${interpolations[@]}"
       do
-        for learning_rate in "${learning_rates[@]}"
-        do
-          sbatch train.sh $model $evaluation $kernel_size $interpolation $learning_rate
-        done
+        sbatch train.sh $model $evaluation $kernel_size $interpolation 1e-2
       done
     done
   done
