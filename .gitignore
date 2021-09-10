@@ -145,7 +145,7 @@ cython_debug/
 *.bat
 
 # MLflow tracking server
-mlruns/
+mlruns*/
 
 # PyCharm settings
 .idea/

@@ -169,8 +169,6 @@ def train(net, data, lr):
 
 
 def main():
-    mlflow.set_tracking_uri('sqlite:///mlruns.db')
-    mlflow.set_experiment('hyperparam')
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',
