@@ -22,15 +22,13 @@ def train(net, data, lr):
         metrics = Metrics()
         net.train()
         for image_batch, label_batch in data.train_loader():
-            image_batch.to(device)
-            label_batch.to(device)
+            image_batch, label_batch = image_batch.to(device), label_batch.to(device)
             optimizer.zero_grad()
             prediction_batch = net(image_batch)
             loss = criterion(prediction_batch, label_batch)
             loss.backward()
             optimizer.step()
             metrics.compute(loss, prediction_batch, label_batch)
-            break
         # Log training loss and accuracy, plus time
         mlflow.log_metric('train_loss', metrics.get_epoch_loss(), epoch + 1)
         mlflow.log_metric('train_acc', metrics.get_epoch_accuracy(), epoch + 1)
@@ -39,8 +37,7 @@ def train(net, data, lr):
         with torch.no_grad():
             net.eval()
             for image_batch, label_batch in data.valid_loader():
-                image_batch.to(device)
-                label_batch.to(device)
+                image_batch, label_batch = image_batch.to(device), label_batch.to(device)
                 prediction_batch = net(image_batch)
                 loss = criterion(prediction_batch, label_batch)
                 metrics.compute(loss, prediction_batch, label_batch)

@@ -15,9 +15,9 @@ class TrafficSignDataModule:
         super().__init__()
         self.batch_size = batch_size
         transform = ToTensor()
-        self.signs_train = ImageFolder('signs/train', transform=transform)
-        self.signs_valid = ImageFolder('signs/val', transform=transform)
-        self.signs_test = ImageFolder('signs/test', transform=transform)
+        self.signs_train = ImageFolder('trafficsign/signs/train', transform=transform)
+        self.signs_valid = ImageFolder('trafficsign/signs/val', transform=transform)
+        self.signs_test = ImageFolder('trafficsign/signs/test', transform=transform)
 
     def train_loader(self):
         return DataLoader(self.signs_train, batch_size=self.batch_size)
