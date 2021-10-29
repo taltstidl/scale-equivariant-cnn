@@ -149,3 +149,9 @@ mlruns*/
 
 # PyCharm settings
 .idea/
+
+# Mapillary data
+trafficsign/mapillary/
+trafficsign/*.zip
+trafficsign/*.db
+trafficsign/signs

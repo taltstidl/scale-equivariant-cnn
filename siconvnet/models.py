@@ -26,7 +26,7 @@ class BaseModel(nn.Module):
     def compute_params(self):
         im_size = 64  # Size of input image, here fixed to 64
         first_scales = (im_size - self.kernel_size) // 2 + 1
-        im_size -= self.kernel_size + 1
+        im_size -= self.kernel_size - 1
         second_scales = (im_size - self.kernel_size) // 2 + 1
         return self.kernel_size, (first_scales, second_scales)
 
