@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from torchvision.transforms import ToTensor
+from torchvision.transforms import Compose, Normalize, ToTensor
 
 
 class TrafficSignDataModule:
@@ -14,7 +14,7 @@ class TrafficSignDataModule:
     def __init__(self, batch_size: int = 16):
         super().__init__()
         self.batch_size = batch_size
-        transform = ToTensor()
+        transform = Compose([Normalize(mean=(0, 0, 0), std=(255, 255, 255)), ToTensor()])
         self.signs_train = ImageFolder('trafficsign/signs/train', transform=transform)
         self.signs_valid = ImageFolder('trafficsign/signs/val', transform=transform)
         self.signs_test = ImageFolder('trafficsign/signs/test', transform=transform)

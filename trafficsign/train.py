@@ -55,6 +55,7 @@ def train(net, data, lr):
     with torch.no_grad():
         net.eval()
         for image_batch, label_batch in data.test_loader():
+            image_batch, label_batch = image_batch.to(device), label_batch.to(device)
             prediction_batch = net(image_batch)
             loss = criterion(prediction_batch, label_batch)
             metrics.compute(loss, prediction_batch, label_batch)
