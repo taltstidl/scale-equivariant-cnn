@@ -84,8 +84,8 @@ def main():
         'standard': StandardModel,
         'scale_equiv': ScaleEquivariantModel
     }
-    network = model_map[args.model]
-    data = TrafficSignDataModule(batch_size=16)
+    network = model_map[args.model]()
+    data = TrafficSignDataModule(batch_size=32)
     # Train the network with the given data
     train(network, data, lr=args.lr)
 
