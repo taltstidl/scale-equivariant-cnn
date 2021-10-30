@@ -5,7 +5,7 @@ import torch
 
 from scripts.train import Metrics, Record, seed_everything
 from trafficsign.data import TrafficSignDataModule
-from trafficsign.models import StandardModel, ScaleEquivariantModel
+from trafficsign.models import StandardModel, ScaleEquivModel
 
 
 def train(net, data, lr):
@@ -82,7 +82,7 @@ def main():
     # Load network and data modules
     model_map = {
         'standard': StandardModel,
-        'scale_equiv': ScaleEquivariantModel
+        'scale_equiv': ScaleEquivModel
     }
     network = model_map[args.model]()
     data = TrafficSignDataModule(batch_size=32)

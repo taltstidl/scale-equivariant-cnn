@@ -36,22 +36,37 @@ class StandardModel(nn.Module):
         return x
 
 
-ScaleEquivariantModel = nn.Sequential(
-    SiConv2d(3, 64, 29, 7, interp_mode='bicubic'),
-    ScalePool(mode='slice'),
-    nn.ReLU(),
-    SiConv2d(64, 128, 26, 7, interp_mode='bicubic'),
-    ScalePool(mode='slice'),
-    nn.ReLU(),
-    SiConv2d(128, 128, 23, 7, interp_mode='bicubic'),
-    ScalePool(mode='slice'),
-    nn.ReLU(),
-    SiConv2d(128, 128, 20, 7, interp_mode='bicubic'),
-    ScalePool(mode='slice'),
-    nn.ReLU(),
-    GlobalMaxPool(),
-    nn.Linear(128, 96),
-    nn.Linear(96, 70),
-)
+class ScaleEquivModel(nn.Module):
+    def __init__(self):
+        """"""
+        super().__init__()
+        channels, scales, layers = 3, 29, []
+        for i in range(2):
+            layers.append(SiConv2d(channels, 32, scales, 7, interp_mode='bicubic'))
+            layers.append(ScalePool(mode='slice'))
+            layers.append(nn.ReLU())
+            layers.append(nn.BatchNorm2d(32))
+            channels = 32
+            scales -= 3
+        for i in range(4):
+            layers.append(SiConv2d(channels, 64, scales, 7, interp_mode='bicubic'))
+            layers.append(ScalePool(mode='slice'))
+            layers.append(nn.ReLU())
+            layers.append(nn.BatchNorm2d(64))
+            channels = 64
+            scales -= 3
+        layers.append(SiConv2d(channels, 128, scales, 7, interp_mode='bicubic'))
+        layers.append(ScalePool(mode='slice'))
+        layers.append(nn.ReLU())
+        layers.append(nn.BatchNorm2d(128))
+        layers.append(GlobalMaxPool())
+        layers.append(nn.Linear(128, 256))
+        layers.append(nn.Linear(256, 70))
+        self.layers = nn.ModuleList(layers)
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
 
 # TODO: Spatial Transformer and Ensemble
