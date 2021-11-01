@@ -76,9 +76,12 @@ class SpatialTransformerModel(nn.Module):
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(16 * 16 * 16, 16),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(16, 6)
         )
+        # Init with identity transform
+        self.transform_model[-1].weight.data.zero_()
+        self.transform_model[-1].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))
 
     def transform(self, x):
         theta = self.transform_model(x)
