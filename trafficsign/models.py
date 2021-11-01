@@ -68,10 +68,10 @@ class SpatialTransformerModel(nn.Module):
         self.base_model = nn.Sequential(*layers)
         # Build transformer model
         self.transform_model = nn.Sequential(
-            nn.Conv2d(3, 16, (3, 3), padding=(2, 2)),
+            nn.Conv2d(3, 16, (3, 3), padding=(1, 1)),
             nn.MaxPool2d(2),
             nn.ReLU(),
-            nn.Conv2d(16, 16, (3, 3), padding=(2, 2)),
+            nn.Conv2d(16, 16, (3, 3), padding=(1, 1)),
             nn.MaxPool2d(2),
             nn.ReLU(),
             nn.Flatten(),
