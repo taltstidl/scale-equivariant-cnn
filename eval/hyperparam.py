@@ -6,15 +6,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def select(hparams, model, interp, k):
+def select(hparams, eval, model, interp, k):
     """ Filter data table by model, interpolation and kernel size. """
     rows = hparams[(hparams['params.model'] == model) & (hparams['params.interpolation'] == interp) &
-                   (hparams['params.kernel_size'] == k)]
+                   (hparams['params.kernel_size'] == k) & (hparams['params.evaluation'] == eval)]
     metrics = rows['metrics.test_acc'].to_numpy()
     metrics = metrics[~np.isnan(metrics)]
     if metrics.shape[0] != 50:
-        found = metrics.shape[0]
-        warnings.warn('Missing runs for model=`{}` interp=`{}` and k=`{}` ({})!'.format(model, interp, k, found))
+        args = (eval, model, interp, k, metrics.shape[0])
+        warnings.warn('Missing runs for eval=`{}` model=`{}` interp=`{}` and k=`{}` ({})!'.format(*args))
     return metrics
 
 
@@ -85,6 +85,57 @@ def plot_results(hparams, evaluation, kernel_size):
     plt.savefig('eval{}_kernel{}.png'.format(evaluation, kernel_size), bbox_inches='tight')
 
 
+def color_box(boxplots, i, color):
+    """ Color a specific box in a boxplot. """
+    box = boxplots['boxes'][i]
+    box.set_color(color)
+    box.set(fill=False)
+    whisker1, whisker2 = boxplots['whiskers'][2 * i], boxplots['whiskers'][2 * i + 1]
+    whisker1.set_color(color)
+    whisker2.set_color(color)
+    cap1, cap2 = boxplots['caps'][2 * i], boxplots['caps'][2 * i + 1]
+    cap1.set_color(color)
+    cap2.set_color(color)
+
+
+def plot_for_paper(hparams):
+    """ Plot results for paper (with interp=bicubic and kernel=7x7). """
+    fig, axs = plt.subplots(nrows=1, ncols=5, sharey='all', figsize=(7.5, 2.0))
+    for eval in range(5):  # Loop over evaluation scenarios
+        axis = axs[eval]
+        if eval == 0:
+            axis.set_ylabel('Testing Accuracy [%]', fontname='Corbel')
+        eval += 1  # Evaluation is 1-based, not 0-based
+        axis.set_title('Evaluation {}'.format(eval), fontname='Corbel', fontsize=10)
+        boxes = [
+            select(hparams, eval=eval, model='standard', interp='bicubic', k=7),
+            select(hparams, eval=eval, model='pixel_pool', interp='bicubic', k=7),
+            select(hparams, eval=eval, model='slice_pool', interp='bicubic', k=7),
+            select(hparams, eval=eval, model='conv3d', interp='bicubic', k=7),
+        ]
+        labels = ['standard', 'pixel_pool', 'scale_pool', 'conv3d']
+        colors = ['#00A3E0', '#43B02A', '#FFB81C', '#C8102E']
+        boxplots = axis.boxplot(boxes, showfliers=False, patch_artist=True)
+        for i in range(4):
+            pos = np.full(shape=(50,), fill_value=i + 1) + np.random.normal(scale=0.1, size=(50,))
+            axis.scatter(pos, boxes[i], s=3, c=colors[i] + '55')
+            color_box(boxplots, i, colors[i])
+        axis.xaxis.set_visible(False)
+        axis.yaxis.grid(zorder=0, c='#eeee')
+        kwargs = {'prop': {'family': 'Corbel', 'size': 9}, 'handlelength': 0.8, 'frameon': False}
+        if eval == 4:
+            axis.legend([boxplots['boxes'][0], boxplots['boxes'][1]], labels[:2], **kwargs)
+        if eval == 5:
+            axis.legend([boxplots['boxes'][2], boxplots['boxes'][3]], labels[2:], **kwargs)
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig('hparams.pdf', bbox_inches='tight')
+
+
+def plot_for_supplemental():
+    pass
+
+
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Command-line interface for generating hyperparam plots.')
@@ -95,9 +146,7 @@ def main():
     args = parser.parse_args()
     # Write plot to file
     hparams = pd.read_csv('../hyperparams.csv')
-    for e in [1, 2, 3, 4, 5]:
-        for k in [3, 7, 11, 15]:
-            plot_results(hparams, e, k)
+    plot_for_paper(hparams)
 
 
 if __name__ == '__main__':
