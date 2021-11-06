@@ -14,13 +14,14 @@ class TrafficSignDataModule:
     batch_size: int
         Number of training samples per batch.
     """
-    def __init__(self, batch_size: int = 16):
+    def __init__(self, batch_size: int = 16, evaluation: int = 1):
         super().__init__()
         self.batch_size = batch_size
+        self.evaluation = evaluation
         transform = ToTensor()
-        self.signs_train = ImageFolder('trafficsign/signs/train', transform=transform)
-        self.signs_valid = ImageFolder('trafficsign/signs/val', transform=transform)
-        self.signs_test = ImageFolder('trafficsign/signs/test', transform=transform)
+        self.signs_train = ImageFolder('trafficsign/signs/evaluation{}/train'.format(evaluation), transform=transform)
+        self.signs_valid = ImageFolder('trafficsign/signs/evaluation{}/val'.format(evaluation), transform=transform)
+        self.signs_test = ImageFolder('trafficsign/signs/evaluation{}/test'.format(evaluation), transform=transform)
 
     def _create_sampler(self, dataset):
         """ Create custom sampler to ensure uniform and balanced class sampling. """
@@ -35,8 +36,8 @@ class TrafficSignDataModule:
         return sampler
 
     def train_loader(self):
-        sampler = self._create_sampler(self.signs_train)
-        return DataLoader(self.signs_train, batch_size=self.batch_size, sampler=sampler)
+        # sampler = self._create_sampler(self.signs_train)
+        return DataLoader(self.signs_train, batch_size=self.batch_size)
 
     def valid_loader(self):
         return DataLoader(self.signs_valid, batch_size=self.batch_size)

@@ -81,43 +81,87 @@ def extract_images(images, path, *zip_files):
 
 
 def extract_images_for_label(label):
+    random.seed(42)
     # Load all zip archives
     train_zips = [zipfile.ZipFile('train.0.zip'), zipfile.ZipFile('train.1.zip'), zipfile.ZipFile('train.2.zip')]
     val_zip = zipfile.ZipFile('val.zip')
+    # Compose queries
+    query_sm = 'SELECT *, MAX(width, height) AS size FROM objects WHERE label = ? AND size >= 9 AND size < 37'
+    query_lg = 'SELECT *, MAX(width, height) AS size FROM objects WHERE label = ? AND size >= 37 AND size < 65'
     # Load train.db
     conn = sqlite3.connect('train.db')
-    images = conn.execute('SELECT * FROM objects WHERE label = ?', (label,)).fetchall()
+    train_sm = conn.execute(query_sm, (label,)).fetchall()
+    random.shuffle(train_sm)
+    train_lg = conn.execute(query_lg, (label,)).fetchall()
+    random.shuffle(train_lg)
     conn.close()
-    # Split train.db images into training and validation
-    random.shuffle(images)
-    cutoff = int(round(0.8 * len(images)))  # 80% for training, 20% for validation
-    train, val = images[:cutoff], images[cutoff:]
-    # Extract training and validation images
-    path = os.path.join('signs', 'train', label)
-    extract_images(train, path, *train_zips)
-    path = os.path.join('signs', 'val', label)
-    extract_images(val, path, *train_zips)
+    # Extract training images
+    extract_images(train_sm[:40], os.path.join('signs', 'evaluation1', 'train', label), *train_zips)
+    extract_images(train_sm[:40], os.path.join('signs', 'evaluation3', 'train', label), *train_zips)
+    extract_images(train_lg[:40], os.path.join('signs', 'evaluation1', 'train', label), *train_zips)
+    extract_images(train_lg[:40], os.path.join('signs', 'evaluation2', 'train', label), *train_zips)
+    # Extract validation images
+    extract_images(train_sm[40:50], os.path.join('signs', 'evaluation1', 'val', label), *train_zips)
+    extract_images(train_sm[40:50], os.path.join('signs', 'evaluation3', 'val', label), *train_zips)
+    extract_images(train_lg[40:50], os.path.join('signs', 'evaluation1', 'val', label), *train_zips)
+    extract_images(train_lg[40:50], os.path.join('signs', 'evaluation2', 'val', label), *train_zips)
     # Load val.db
     conn = sqlite3.connect('val.db')
-    images = conn.execute('SELECT * FROM objects WHERE label = ?', (label,)).fetchall()
+    val_sm = conn.execute(query_sm, (label,)).fetchall()
+    val_lg = conn.execute(query_lg, (label,)).fetchall()
     conn.close()
     # Extract test images
-    path = os.path.join('signs', 'test', label)
-    extract_images(images, path, val_zip)
+    extract_images(val_sm[:10], os.path.join('signs', 'evaluation1', 'test', label), val_zip)
+    extract_images(val_sm[:10], os.path.join('signs', 'evaluation2', 'test', label), val_zip)
+    extract_images(val_lg[:10], os.path.join('signs', 'evaluation1', 'test', label), val_zip)
+    extract_images(val_lg[:10], os.path.join('signs', 'evaluation3', 'test', label), val_zip)
+
+
+def to_dict(counts):
+    """ Converts list of tuples (label, size, count) to dict structure dict[label][size] = count. """
+    dictionary = {}
+    for count in counts:
+        label, size, count = count
+        if label not in dictionary:
+            dictionary[label] = {}
+        dictionary[label][size] = count
+    return dictionary
+
+
+def has_enough_samples(label, train_counts, val_counts):
+    """ Checks whether enough samples are present. """
+    if label not in train_counts or label not in val_counts:
+        return False  # Label is not present in both training and validation
+    train_counts, val_counts = train_counts[label], val_counts[label]
+    # For training/validation, at least 50 samples in the smaller and larger halves
+    train_count_sm = sum([train_counts.get(s, 0) for s in range(9, 37)])  # Smaller half of scales
+    train_count_lg = sum([train_counts.get(s, 0) for s in range(37, 65)])  # Larger half of scales
+    # For testing, at least 10 samples in the smaller and larger halves
+    val_count_sm = sum([val_counts.get(s, 0) for s in range(9, 37)])  # Smaller half of scales
+    val_count_lg = sum([val_counts.get(s, 0) for s in range(37, 65)])  # Larger half of scales
+    return train_count_sm >= 50 and train_count_lg >= 50 and val_count_sm >= 10 and val_count_lg >= 10
+
+
+def select_labels():
+    """ Selects labels that have suitable amounts of samples available. """
+    query = 'SELECT label, MAX(width, height) AS size, COUNT(*) AS count FROM objects GROUP BY label, size'
+    # Query number of samples per label and size for training images
+    conn = sqlite3.connect('train.db')
+    train_counts = to_dict(conn.execute(query).fetchall())
+    conn.close()
+    # Query number of samples per label and size for validation images
+    conn = sqlite3.connect('val.db')
+    val_counts = to_dict(conn.execute(query).fetchall())
+    conn.close()
+    # Go over each possible label
+    labels = set(list(train_counts.keys()) + list(val_counts.keys()))
+    labels = [l for l in labels if has_enough_samples(l, train_counts, val_counts)]
+    return labels
 
 
 def create_folders():
-    """ Reads and filters databases, then writes cropped object images to individual folders. """
-    # Create necessary directories
-    os.makedirs(os.path.join('signs', 'train'), exist_ok=True)
-    os.makedirs(os.path.join('signs', 'val'), exist_ok=True)
-    os.makedirs(os.path.join('signs', 'test'), exist_ok=True)
-    # Select labels that have at least 100 samples in the training data
-    conn = sqlite3.connect('train.db')
-    counts = conn.execute('SELECT label, COUNT(*) AS count FROM objects GROUP BY label ORDER BY count DESC').fetchall()
-    labels = [c[0] for c in counts if c[1] >= 100][1:]  # All labels with >= 100 samples, except "other-sign"
-    conn.close()
-    # Extract train, val and test images to folders
+    """ Writes cropped object images to individual folders. """
+    labels = select_labels()
     for label in labels:
         extract_images_for_label(label)
 

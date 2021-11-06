@@ -16,13 +16,13 @@ class StandardModel(nn.Module):
         """"""
         super().__init__()
         layers = []
-        channels = [3, 32, 64, 64, 128]
+        channels = [3, 32, 64, 64]
         for in_c, out_c in zip(channels[:-1], channels[1:]):
             layers.append(nn.Conv2d(in_c, out_c, (7, 7)))
             layers.append(nn.ReLU())
             layers.append(nn.BatchNorm2d(out_c))
         layers.append(GlobalMaxPool())
-        layers.append(nn.Linear(128, 70))
+        layers.append(nn.Linear(64, 36))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
@@ -36,14 +36,14 @@ class ScaleEquivModel(nn.Module):
         """"""
         super().__init__()
         layers = []
-        channels, scales = [3, 32, 64, 64, 128], [29, 26, 23, 20]
+        channels, scales = [3, 32, 64, 64], [29, 26, 23]
         for in_c, out_c, s in zip(channels[:-1], channels[1:], scales):
             layers.append(SiConv2d(in_c, out_c, s, 7, interp_mode='bicubic'))
             layers.append(ScalePool(mode='slice'))
             layers.append(nn.ReLU())
             layers.append(nn.BatchNorm2d(out_c))
         layers.append(GlobalMaxPool())
-        layers.append(nn.Linear(128, 70))
+        layers.append(nn.Linear(64, 36))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
@@ -58,13 +58,13 @@ class SpatialTransformerModel(nn.Module):
         super().__init__()
         # Build base model
         layers = []
-        channels = [3, 32, 64, 64, 128]
+        channels = [3, 32, 64, 64]
         for in_c, out_c in zip(channels[:-1], channels[1:]):
             layers.append(nn.Conv2d(in_c, out_c, (7, 7)))
             layers.append(nn.ReLU())
             layers.append(nn.BatchNorm2d(out_c))
         layers.append(GlobalMaxPool())
-        layers.append(nn.Linear(128, 70))
+        layers.append(nn.Linear(64, 36))
         self.base_model = nn.Sequential(*layers)
         # Build transformer model
         self.transform_model = nn.Sequential(
@@ -100,13 +100,13 @@ class EnsembleModel(nn.Module):
         """"""
         super().__init__()
         layers = []
-        channels = [3, 32, 64, 64, 128]
+        channels = [3, 32, 64, 64]
         for in_c, out_c in zip(channels[:-1], channels[1:]):
             layers.append(nn.Conv2d(in_c, out_c, (7, 7), padding=(3, 3)))
             layers.append(nn.ReLU())
             layers.append(nn.BatchNorm2d(out_c))
         layers.append(GlobalMaxPool())
-        layers.append(nn.Linear(128, 70))
+        layers.append(nn.Linear(64, 36))
         self.base_model = nn.Sequential(*layers)
 
     def forward(self, x):

@@ -69,12 +69,15 @@ def main():
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',
                         choices=['standard', 'scale_equiv', 'spatial_transformer', 'ensemble'], required=True)
+    parser.add_argument('--evaluation', help='The evaluation scheme that should be used',
+                        type=int, choices=[1, 2, 3], required=True)
     parser.add_argument('--lr', help='The learning rate used by the Adam optimizer',
                         type=float, choices=[1e-2, 1e-3], required=True)
     parser.add_argument('--seed', help='The seed used for random initialization', type=int, required=True)
     args = parser.parse_args()
     # Log parameters
     mlflow.log_param('model', args.model)
+    mlflow.log_param('evaluation', args.evaluation)
     mlflow.log_param('lr', args.lr)
     mlflow.log_param('seed', args.seed)
     # Set seed for reproducibility
@@ -87,7 +90,7 @@ def main():
         'ensemble': EnsembleModel,
     }
     network = model_map[args.model]()
-    data = TrafficSignDataModule(batch_size=32)
+    data = TrafficSignDataModule(batch_size=32, evaluation=args.evaluation)
     # Train the network with the given data
     train(network, data, lr=args.lr)
 
