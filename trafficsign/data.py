@@ -37,7 +37,7 @@ class TrafficSignDataModule:
 
     def train_loader(self):
         # sampler = self._create_sampler(self.signs_train)
-        return DataLoader(self.signs_train, batch_size=self.batch_size)
+        return DataLoader(self.signs_train, batch_size=self.batch_size, shuffle=True)
 
     def valid_loader(self):
         return DataLoader(self.signs_valid, batch_size=self.batch_size)
