@@ -3,6 +3,9 @@
 This module contains the models presented in the paper.
 """
 import numpy as np
+import torch
+import torch.nn.functional as F
+from kornia.geometry import build_pyramid
 from torch import nn
 
 from siconvnet.layers import SiConv2d, ScalePool, GlobalMaxPool
@@ -107,7 +110,7 @@ class PixelPoolModel(BaseModel):
         x = self.global_pool(x)
         self.save_trace('features', x)
         x = self.lin(x)
-        self.save_trace('prediction', x)
+        self.save_trace('predictions', x)
         return x
 
 
@@ -165,3 +168,68 @@ class Conv3dModel(BaseModel):
         x = self.lin(x)
         self.save_trace('predictions', x)
         return x
+
+
+class EnsembleModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        conv1 = nn.Conv2d(1, 16, (k, k))
+        act1 = nn.ReLU()
+        conv2 = nn.Conv2d(16, 32, (k, k))
+        act2 = nn.ReLU()
+        global_pool = GlobalMaxPool()
+        lin = nn.Linear(32, 36)
+        self.base_model = nn.Sequential(conv1, act1, conv2, act2, global_pool, lin)
+
+    def forward(self, x):
+        """"""
+        pyramid = build_pyramid(x, max_level=3)
+        energies = [self.base_model(p) for p in pyramid]
+        energies = torch.stack(energies)
+        return torch.mean(energies, dim=0)
+
+
+class SpatialTransformModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        conv1 = nn.Conv2d(1, 16, (k, k))
+        act1 = nn.ReLU()
+        conv2 = nn.Conv2d(16, 32, (k, k))
+        act2 = nn.ReLU()
+        global_pool = GlobalMaxPool()
+        lin = nn.Linear(32, 36)
+        self.base_model = nn.Sequential(conv1, act1, conv2, act2, global_pool, lin)
+        # Build transformer model
+        self.transform_model = nn.Sequential(
+            nn.Conv2d(3, 16, (3, 3), padding=(1, 1)),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(16, 16, (3, 3), padding=(1, 1)),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(16 * 16 * 16, 16),
+            nn.ReLU(),
+            nn.Linear(16, 6)
+        )
+        # Init with identity transform
+        self.transform_model[-1].weight.data.zero_()
+        self.transform_model[-1].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))
+
+    def transform(self, x):
+        """"""
+        theta = self.transform_model(x)
+        theta = theta.view(-1, 2, 3)
+        grid = F.affine_grid(theta, x.size())
+        x = F.grid_sample(x, grid)
+        return x
+
+    def forward(self, x):
+        """"""
+        x = self.transform(x)
+        return self.base_model(x)
+

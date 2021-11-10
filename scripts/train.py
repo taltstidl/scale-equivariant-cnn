@@ -21,7 +21,7 @@ import numpy as np
 import torch
 
 from siconvnet.data import EmojiDataModule
-from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, Conv3dModel
+from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, Conv3dModel, EnsembleModel, SpatialTransformModel
 
 
 class Metrics:
@@ -172,7 +172,8 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',
-                        choices=['standard', 'pixel_pool', 'slice_pool', 'conv3d'], required=True)
+                        choices=['standard', 'pixel_pool', 'slice_pool', 'conv3d', 'ensemble', 'spatial_transform'],
+                        required=True)
     parser.add_argument('--evaluation', help='The evaluation scheme that should be used',
                         type=int, choices=[1, 2, 3, 4, 5], required=True)
     parser.add_argument('--kernel-size', help='The height and the width of the kernel that should be used',
@@ -197,7 +198,9 @@ def main():
         'standard': StandardModel,
         'pixel_pool': PixelPoolModel,
         'slice_pool': SlicePoolModel,
-        'conv3d': Conv3dModel
+        'conv3d': Conv3dModel,
+        'ensemble': EnsembleModel,
+        'spatial_transform': SpatialTransformModel
     }
     network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation)
     data = EmojiDataModule(batch_size=16, evaluation=args.evaluation)
