@@ -175,9 +175,10 @@ class EnsembleModel(BaseModel):
         """"""
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
-        conv1 = nn.Conv2d(1, 16, (k, k))
+        p = (k - 1) // 2
+        conv1 = nn.Conv2d(1, 16, (k, k), padding=(p, p))
         act1 = nn.ReLU()
-        conv2 = nn.Conv2d(16, 32, (k, k))
+        conv2 = nn.Conv2d(16, 32, (k, k), padding=(p, p))
         act2 = nn.ReLU()
         global_pool = GlobalMaxPool()
         lin = nn.Linear(32, 36)
@@ -205,7 +206,7 @@ class SpatialTransformModel(BaseModel):
         self.base_model = nn.Sequential(conv1, act1, conv2, act2, global_pool, lin)
         # Build transformer model
         self.transform_model = nn.Sequential(
-            nn.Conv2d(3, 16, (3, 3), padding=(1, 1)),
+            nn.Conv2d(1, 16, (3, 3), padding=(1, 1)),
             nn.MaxPool2d(2),
             nn.ReLU(),
             nn.Conv2d(16, 16, (3, 3), padding=(1, 1)),
