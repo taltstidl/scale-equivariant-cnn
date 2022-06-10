@@ -12,14 +12,14 @@ Depending on which data you are planning to use, download one or more of the fol
 | `mnist.npz` | Classic MNIST handwritten digits rescaled to varying sizes | [on Zenodo]() |
 | `trafficsign.npz` | Traffic signs from street imagery downscaled to varying sizes | [on Zenodo]() |
 
-Each file contains multiple arrays that can be accessed in a dictionary-like fashion. The keys are documented below, where `n` is the number of classes for a given file. Both `emoji.npz` (36 classes) and `mnist.npz` (10 classes) are in black & white while `trafficsign.npz` (40 classes) is in color.
+Each file contains multiple arrays that can be accessed in a dictionary-like fashion. The keys are documented below, where `n` is the number of classes for a given file and `m` is the number of instances for each class. Both `emoji.npz` (36 classes, 1 instance) and `mnist.npz` (10 classes, 50 instances) are in black & white while `trafficsign.npz` (16 classes, 25 instances) is in color.
 
 | Key | Shape | Description |
 | --- | ----- | ----------- |
-| `imgs` | `(3, 48, n, 64, 64)` black & white, `(3, 48, n, 64, 64, 3)` color | Images grouped into 3 sets (training, validation, testing) and 48 different scales. Values will be in range `0` to `255`. |
-| `lbls` | `(3, 48, n)` | Indices referencing ground truth labels. Values will be in range `0` to `n - 1`. |
-| `scls` | `(3, 48, n)` | Known scales as given by bounding box size. Values will be in range `17` to `64`. |
-| `psts` | `(3, 48, n, 2)` | Known position of bounding box. First value is distance to left edge, second value distance to top edge. |
+| `imgs` | `(3, 48, n, m, 64, 64)` black & white, `(3, 48, n, 64, 64, 3)` color | Images grouped into 3 sets (training, validation, testing) and 48 different scales. Values will be in range `0` to `255`. |
+| `lbls` | `(3, 48, n, m)` | Indices referencing ground truth labels. Values will be in range `0` to `n - 1`. |
+| `scls` | `(3, 48, n, m)` | Known scales as given by bounding box size. Values will be in range `17` to `64`. |
+| `psts` | `(3, 48, n, m, 2)` | Known position of bounding box. First value is distance to left edge, second value distance to top edge. |
 | `metadata` | `(6, 2)` | Metadata on title, description, author, license, version and date. |
 | `lbldata` | `(n,)` | Descriptive names for each ground truth labels. |
 

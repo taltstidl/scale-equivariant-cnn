@@ -101,7 +101,7 @@ def generate():
     # Find suitable object classes (at least 48 with width equals height)
     conn = sqlite3.connect('signs.db')
     classes = conn.execute('SELECT label, COUNT(*) AS count FROM objects WHERE ABS(width - height) < 5 '
-                           'GROUP BY label HAVING count >= 144')
+                           'GROUP BY label HAVING count >= 75')
     classes = list(classes)
     classes.remove([c for c in classes if c[0] == 'other-sign'][0])  # other-sign is just "catch all" class
     collected_signs = []  # list of actual classes used after filtering
@@ -109,33 +109,34 @@ def generate():
     paths = ['train.0.zip', 'train.1.zip', 'train.2.zip', 'val.zip']
     zip_files = [ZipFile(os.path.join('mapillary', p)) for p in paths]
     # Create empty package contents
-    images = [[[] for _ in range(48)] for _ in range(3)]
-    labels = [[[] for _ in range(48)] for _ in range(3)]
-    scales = [[[] for _ in range(48)] for _ in range(3)]
-    translations = [[[] for _ in range(48)] for _ in range(3)]
+    num_instances = 25  # Number of sampled images per class
+    images = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
+    labels = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
+    scales = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
+    translations = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
     # Generate scaled images for each object class
     current_sign = -1
     for index, (label, _) in enumerate(classes):  # 40 different traffic signs
         objects = conn.execute('SELECT * FROM objects WHERE label = ? AND ABS(width - height) < 5 '
-                               'ORDER BY MIN(width, height) DESC LIMIT 144', (label,))
+                               'ORDER BY MIN(width, height) DESC LIMIT 75', (label,))
         objects = list(objects)
         # Check whether it's possible to only downscale traffic signs
         got_sizes = np.array([min(o[7], o[8]) for o in objects])
-        expected_sizes = np.repeat(np.arange(64, 16, -1), 3)
-        if np.any(got_sizes < expected_sizes):
+        if np.any(got_sizes < 64):
             continue
         # Increment current sign after filtering
         collected_signs.append(label)
         current_sign += 1
         # Split traffic signs into training, validation and testing
         splits = objects[0::3], objects[1::3], objects[2::3]
-        for i, scale in enumerate(range(64, 16, -1)):  # 32 different scales
-            for j in range(3):  # 3 sets (training, validation, testing)
-                sign, translation = extract_sign_from_image(splits[j][i], scale, zip_files)
-                images[j][i].append(sign)
-                labels[j][i].append(current_sign)
-                scales[j][i].append(scale)
-                translations[j][i].append(translation)
+        for i in range(num_instances):  # 25 different images per traffic sign
+            for j, scale in enumerate(range(64, 16, -1)):  # 32 different scales
+                for k in range(3):  # 3 sets (training, validation, testing)
+                    sign, translation = extract_sign_from_image(splits[k][i], scale, zip_files)
+                    images[k][j][i].append(sign)
+                    labels[k][j][i].append(current_sign)
+                    scales[k][j][i].append(scale)
+                    translations[k][j][i].append(translation)
     # Collect metadata, two-dimensional numpy array to avoid pickling
     metadata = np.array([
         ['title', 'Scaled and Translated Image Recognition (STIR) Traffic Sign'],
@@ -149,7 +150,10 @@ def generate():
     ])
     lbldata = np.array(collected_signs)
     # Save data file
-    imgs, lbls, scls, psts = np.array(images), np.array(labels), np.array(scales), np.array(translations)
+    imgs = np.array(images).swapaxes(2, 3)
+    lbls = np.array(labels).swapaxes(2, 3)
+    scls = np.array(scales).swapaxes(2, 3)
+    psts = np.array(translations).swapaxes(2, 3)
     np.savez_compressed('trafficsign.npz', imgs=imgs, lbls=lbls, scls=scls, psts=psts,
                         metadata=metadata, lbldata=lbldata)
 

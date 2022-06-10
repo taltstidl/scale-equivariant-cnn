@@ -71,7 +71,10 @@ def generate(icons):
     ])
     lbldata = np.array(icons)
     # Save data file
-    imgs, lbls, scls, psts = np.array(images), np.array(labels), np.array(scales), np.array(translations)
+    imgs = np.expand_dims(np.array(images), axis=3)
+    lbls = np.expand_dims(np.array(labels), axis=3)
+    scls = np.expand_dims(np.array(scales), axis=3)
+    psts = np.expand_dims(np.array(translations), axis=3)
     np.savez_compressed(file_name, imgs=imgs, lbls=lbls, scls=scls, psts=psts,
                         metadata=metadata, lbldata=lbldata)
 

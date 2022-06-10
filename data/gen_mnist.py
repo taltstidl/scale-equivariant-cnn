@@ -53,23 +53,26 @@ def generate():
     test_images = read_idx(os.path.join('mnist', 't10k-images-idx3-ubyte.gz'), 3)
     test_labels = read_idx(os.path.join('mnist', 't10k-labels-idx1-ubyte.gz'), 1)
     # Create empty package contents
-    images = [[[] for _ in range(48)] for _ in range(3)]
-    labels = [[[] for _ in range(48)] for _ in range(3)]
-    scales = [[[] for _ in range(48)] for _ in range(3)]
-    translations = [[[] for _ in range(48)] for _ in range(3)]
+    num_instances = 50  # Number of sampled images per class
+    images = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
+    labels = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
+    scales = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
+    translations = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
     # Iterate over all combinations to generate images
     for index in range(10):  # 10 different digits
-        for i, scale in enumerate(range(64, 16, -1)):  # 32 different scales
-            for j in range(3):  # 3 sets (training, validation, testing)
-                # Get correct origin set
-                src_images = test_images if i == 2 else train_images
-                src_labels = test_labels if i == 2 else train_labels
-                # Add a rescaled MNIST image to the dataset
-                image, translation = rescaled_mnist(src_images, src_labels, index, i + j * 32, scale)
-                images[j][i].append(image)
-                labels[j][i].append(index)
-                scales[j][i].append(scale)
-                translations[j][i].append(translation)
+        for i in range(num_instances):  # 50 different images per digit
+            for j, scale in enumerate(range(64, 16, -1)):  # 32 different scales
+                for k in range(3):  # 3 sets (training, validation, testing)
+                    # Get correct origin set
+                    src_images = test_images if k == 2 else train_images
+                    src_labels = test_labels if k == 2 else train_labels
+                    # Add a rescaled MNIST image to the dataset
+                    src_i = i if k == 2 else i + k * num_instances
+                    image, translation = rescaled_mnist(src_images, src_labels, index, src_i, scale)
+                    images[k][j][i].append(image)
+                    labels[k][j][i].append(index)
+                    scales[k][j][i].append(scale)
+                    translations[k][j][i].append(translation)
     # Collect metadata, two-dimensional numpy array to avoid pickling
     metadata = np.array([
         ['title', 'Scaled and Translated Image Recognition (STIR) MNIST'],
@@ -83,7 +86,10 @@ def generate():
     ])
     lbldata = np.array([str(i) for i in range(10)])
     # Save data file
-    imgs, lbls, scls, psts = np.array(images), np.array(labels), np.array(scales), np.array(translations)
+    imgs = np.array(images).swapaxes(2, 3)
+    lbls = np.array(labels).swapaxes(2, 3)
+    scls = np.array(scales).swapaxes(2, 3)
+    psts = np.array(translations).swapaxes(2, 3)
     np.savez_compressed('mnist.npz', imgs=imgs, lbls=lbls, scls=scls, psts=psts,
                         metadata=metadata, lbldata=lbldata)
 
