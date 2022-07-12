@@ -20,7 +20,7 @@ import mlflow
 import numpy as np
 import torch
 
-from siconvnet.data import EmojiDataModule
+from siconvnet.data import STIRDataModule
 from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, Conv3dModel, EnsembleModel, SpatialTransformModel
 
 
@@ -122,6 +122,15 @@ def train(net, data, lr):
         timer.start()
         net.train()
         for image_batch, label_batch in data.train_loader():
+            # import matplotlib.pyplot as plt
+            # images = image_batch.detach().cpu().numpy()
+            # labels = label_batch.detach().cpu().numpy()
+            # for image, label in zip(images, labels):
+            #     print(image.shape, label.shape)
+            #     plt.title('Labeled {}'.format(data.dataset.labeldata[label]))
+            #     plt.imshow(image.reshape((64, 64)))
+            #     plt.colorbar()
+            #     plt.show()
             optimizer.zero_grad()
             prediction_batch = net(image_batch)
             loss = criterion(prediction_batch, label_batch)
@@ -163,7 +172,7 @@ def train(net, data, lr):
             prediction_all.append(prediction_batch.argmax(dim=1).detach().cpu().numpy())
         np.save(record.get_prediction_path(), np.concatenate(prediction_all))
     mlflow.log_artifact(record.get_prediction_path())
-    # Log validation loss and accuracy
+    # Log testing loss and accuracy
     mlflow.log_metric('test_loss', metrics.get_epoch_loss())
     mlflow.log_metric('test_acc', metrics.get_epoch_accuracy())
 
@@ -174,8 +183,10 @@ def main():
     parser.add_argument('--model', help='The model type that should be trained',
                         choices=['standard', 'pixel_pool', 'slice_pool', 'conv3d', 'ensemble', 'spatial_transform'],
                         required=True)
+    parser.add_argument('--data', help='The image recognition dataset that should be used',
+                        choices=['emoji', 'mnist', 'trafficsign'], required=True)
     parser.add_argument('--evaluation', help='The evaluation scheme that should be used',
-                        type=int, choices=[1, 2, 3, 4, 5], required=True)
+                        type=int, choices=[1, 2, 3], required=True)
     parser.add_argument('--kernel-size', help='The height and the width of the kernel that should be used',
                         type=int, choices=[3, 7, 11, 15], required=True)
     parser.add_argument('--interpolation', help='The interpolation technique that should be used',
@@ -186,6 +197,7 @@ def main():
     args = parser.parse_args()
     # Log parameters
     mlflow.log_param('model', args.model)
+    mlflow.log_param('data', args.data)
     mlflow.log_param('evaluation', args.evaluation)
     mlflow.log_param('kernel_size', args.kernel_size)
     mlflow.log_param('interpolation', args.interpolation)
@@ -203,7 +215,8 @@ def main():
         'spatial_transform': SpatialTransformModel
     }
     network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation)
-    data = EmojiDataModule(batch_size=16, evaluation=args.evaluation)
+    data = STIRDataModule(data=args.data, batch_size=16, evaluation=args.evaluation)
+
     # Train the network with the given data
     train(network, data, lr=args.lr)
 

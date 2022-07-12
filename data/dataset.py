@@ -71,10 +71,11 @@ class STIRDataset:
         # Retrieve appropriate images and labels
         images, labels = self.images[split_i, scale_i], self.labels[split_i, scale_i]
         # Reshape arrays
-        if len(images.shape) == 4:
+        if len(images.shape) == 5:
             images = images.reshape((-1, 64, 64, 1))
-        elif len(images.shape) == 5:
+        elif len(images.shape) == 6:
             images = images.reshape((-1, 64, 64, 3))
+        images = images.transpose((0, 3, 1, 2))
         labels = labels.reshape((-1,))
         # Convert from [0, 255] range to [0.0, 1.0] range
         images = images.astype(np.float32) / 255.0
