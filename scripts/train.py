@@ -214,9 +214,9 @@ def main():
         'ensemble': EnsembleModel,
         'spatial_transform': SpatialTransformModel
     }
-    network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation)
     data = STIRDataModule(data=args.data, batch_size=16, evaluation=args.evaluation)
-
+    network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation,
+                                      num_channels=data.num_channels, num_classes=data.num_classes)
     # Train the network with the given data
     train(network, data, lr=args.lr)
 

@@ -18,11 +18,13 @@ class BaseModel(nn.Module):
     records the training and validation accuracy and configures an Adam optimizer.
     """
 
-    def __init__(self, kernel_size, interpolation):
+    def __init__(self, kernel_size, interpolation, num_channels, num_classes):
         """"""
         super().__init__()
         self.kernel_size = kernel_size
         self.interpolation = interpolation
+        self.num_channels = num_channels
+        self.num_classes = num_classes
         self.tracing = False
         self.tracing_cache = {}
 
@@ -61,12 +63,12 @@ class StandardModel(BaseModel):
         """"""
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
-        self.conv1 = nn.Conv2d(1, 16, (k, k))
+        self.conv1 = nn.Conv2d(self.num_channels, 16, (k, k))
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv2d(16, 32, (k, k))
         self.act2 = nn.ReLU()
         self.global_pool = GlobalMaxPool()
-        self.lin = nn.Linear(32, 36)
+        self.lin = nn.Linear(32, self.num_classes)
 
     def forward(self, x):
         """"""
@@ -88,14 +90,14 @@ class PixelPoolModel(BaseModel):
         """"""
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
-        self.conv1 = SiConv2d(1, 16, num_scales[0], k, interp_mode=self.interpolation)
+        self.conv1 = SiConv2d(self.num_channels, 16, num_scales[0], k, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode='pixel')
         self.act1 = nn.ReLU()
         self.conv2 = SiConv2d(16, 32, num_scales[1], k, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode='pixel')
         self.act2 = nn.ReLU()
         self.global_pool = GlobalMaxPool()
-        self.lin = nn.Linear(32, 36)
+        self.lin = nn.Linear(32, self.num_classes)
 
     def forward(self, x):
         """"""
@@ -119,14 +121,14 @@ class SlicePoolModel(BaseModel):
         """"""
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
-        self.conv1 = SiConv2d(1, 16, num_scales[0], k, interp_mode=self.interpolation)
+        self.conv1 = SiConv2d(self.num_channels, 16, num_scales[0], k, interp_mode=self.interpolation)
         self.pool1 = ScalePool(mode='slice')
         self.act1 = nn.ReLU()
         self.conv2 = SiConv2d(16, 32, num_scales[1], k, interp_mode=self.interpolation)
         self.pool2 = ScalePool(mode='slice')
         self.act2 = nn.ReLU()
         self.global_pool = GlobalMaxPool()
-        self.lin = nn.Linear(32, 36)
+        self.lin = nn.Linear(32, self.num_classes)
 
     def forward(self, x):
         """"""
@@ -150,12 +152,12 @@ class Conv3dModel(BaseModel):
         """"""
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
-        self.conv1 = SiConv2d(1, 16, num_scales[0], k, interp_mode=self.interpolation)
+        self.conv1 = SiConv2d(self.num_channels, 16, num_scales[0], k, interp_mode=self.interpolation)
         self.act1 = nn.ReLU()
         self.conv2 = nn.Conv3d(16, 32, (k, k, k))
         self.act2 = nn.ReLU()
         self.global_pool = GlobalMaxPool()
-        self.lin = nn.Linear(32, 36)
+        self.lin = nn.Linear(32, self.num_classes)
 
     def forward(self, x):
         """"""
@@ -176,12 +178,12 @@ class EnsembleModel(BaseModel):
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
         p = (k - 1) // 2
-        conv1 = nn.Conv2d(1, 16, (k, k), padding=(p, p))
+        conv1 = nn.Conv2d(self.num_channels, 16, (k, k), padding=(p, p))
         act1 = nn.ReLU()
         conv2 = nn.Conv2d(16, 32, (k, k), padding=(p, p))
         act2 = nn.ReLU()
         global_pool = GlobalMaxPool()
-        lin = nn.Linear(32, 36)
+        lin = nn.Linear(32, self.num_classes)
         self.base_model = nn.Sequential(conv1, act1, conv2, act2, global_pool, lin)
 
     def forward(self, x):
@@ -197,16 +199,16 @@ class SpatialTransformModel(BaseModel):
         """"""
         super().__init__(**kwargs)
         k, num_scales = self.compute_params()
-        conv1 = nn.Conv2d(1, 16, (k, k))
+        conv1 = nn.Conv2d(self.num_channels, 16, (k, k))
         act1 = nn.ReLU()
         conv2 = nn.Conv2d(16, 32, (k, k))
         act2 = nn.ReLU()
         global_pool = GlobalMaxPool()
-        lin = nn.Linear(32, 36)
+        lin = nn.Linear(32, self.num_classes)
         self.base_model = nn.Sequential(conv1, act1, conv2, act2, global_pool, lin)
         # Build transformer model
         self.transform_model = nn.Sequential(
-            nn.Conv2d(1, 16, (3, 3), padding=(1, 1)),
+            nn.Conv2d(self.num_channels, 16, (3, 3), padding=(1, 1)),
             nn.MaxPool2d(2),
             nn.ReLU(),
             nn.Conv2d(16, 16, (3, 3), padding=(1, 1)),
