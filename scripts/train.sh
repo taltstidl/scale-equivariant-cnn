@@ -9,7 +9,7 @@ cd $HOME/siconvnet
 module load python/3.8-anaconda
 source .venv/bin/activate
 export PYTHONPATH=.
-export MLFLOW_EXPERIMENT_NAME=trial1
+export MLFLOW_EXPERIMENT_NAME=trial2
 export MLFLOW_TRACKING_URI=http://mad-vm-thomas.informatik.uni-erlangen.de/mlflow_siconv
 for seed in {1..50}
 do
