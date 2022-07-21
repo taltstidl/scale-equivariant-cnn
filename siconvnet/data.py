@@ -21,8 +21,8 @@ class STIRDataModule:
         self.batch_size = batch_size
         self.evaluation = evaluation
         self.dataset = STIRDataset(path='{}.npz'.format(data))
-        self.num_classes = self.dataset.images.shape[2]
-        self.num_channels = self.dataset.images.shape[6] if len(self.dataset.images.shape) == 7 else 1
+        self.num_classes = self.dataset.num_classes
+        self.num_channels = self.dataset.num_channels
         self.split_dataset()
 
     def split_dataset(self):

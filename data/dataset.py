@@ -18,6 +18,9 @@ class STIRDataset:
         self.positions = data['psts']
         self.metadata = {m[0]: m[1] for m in data['metadata']}
         self.labeldata = data['lbldata']
+        # Retrieve number of classes and channels
+        self.num_classes = self.images.shape[2]
+        self.num_channels = self.images.shape[6] if len(self.images.shape) == 7 else 1
 
     def __len__(self):
         return self.images.shape[0]

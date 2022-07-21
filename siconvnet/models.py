@@ -38,19 +38,25 @@ class BaseModel(nn.Module):
     def enable_tracing(self):
         self.tracing = True
 
+    def disable_tracing(self):
+        del self.tracing_cache
+        self.tracing = False
+        self.tracing_cache = {}
+
     def save_trace(self, name, tensor):
         if not self.tracing:
             return
-        if name not in self.tracing_cache:
-            self.tracing_cache[name] = []
-        tensor = tensor.cpu().numpy()
-        self.tracing_cache[name].append(tensor)
+        # if name not in self.tracing_cache:
+        #     self.tracing_cache[name] = []
+        # tensor = tensor.cpu().numpy()
+        # self.tracing_cache[name].append(tensor)
+        self.tracing_cache[name] = tensor.detach().cpu()
 
     def get_traces(self):
-        for name in self.tracing_cache:
-            arrays = self.tracing_cache[name]
-            concat = np.concatenate(arrays)
-            self.tracing_cache[name] = concat
+        # for name in self.tracing_cache:
+        #     arrays = self.tracing_cache[name]
+        #     concat = np.concatenate(arrays)
+        #     self.tracing_cache[name] = concat
         return self.tracing_cache
 
     def forward(self, x):
