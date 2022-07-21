@@ -47,7 +47,7 @@ def main():
     for data in ['emoji']:  # TODO: add all datasets!
         dataset = STIRDataset(path='{}.npz'.format(data))
         runs = runs[runs['params.data'] == data]  # Filter for dataset
-        for run in runs.iterrows():
+        for _, run in runs.iterrows():
             model_key, data_key, evaluation = run['params.model'], run['params.data'], run['params.evaluation']
             metadata = [model_key, data_key, evaluation]
             # Load model, ensuring it's on the correct device and in evaluation mode
