@@ -57,7 +57,8 @@ def main():
             model.eval()
             # Compute the different metrics
             generalization_metrics.append(metadata + scale_generalization(model, dataset, device))
-            equivariance_metrics.extend([metadata + s for s in scale_equivariance(model, dataset, device)])
+            if model_key in ['standard', 'pixel_pool', 'slice_pool']:
+                equivariance_metrics.extend([metadata + s for s in scale_equivariance(model, dataset, device)])
     # Store results for scale generalization
     generalization_columns = ['data', 'model', 'eval'] + ['s{}'.format(i) for i in range(17, 65)]
     generalization_df = pd.DataFrame.from_records(generalization_metrics, columns=generalization_columns)
