@@ -41,6 +41,11 @@ class STIRDataModule:
             self.train = self.dataset.to_torch(split='train', scales=train_val_scales)
             self.valid = self.dataset.to_torch(split='valid', scales=train_val_scales)
             self.test = self.dataset.to_torch(split='test', scales=test_scales)
+        if self.evaluation == 4:  # Train on all scales, evaluate on all scales
+            scales = range(17, 65)
+            self.train = self.dataset.to_torch(split='train', scales=scales)
+            self.valid = self.dataset.to_torch(split='valid', scales=scales)
+            self.test = self.dataset.to_torch(split='test', scales=scales)
 
     def train_loader(self):
         return DataLoader(self.train, batch_size=self.batch_size)

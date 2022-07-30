@@ -186,7 +186,7 @@ def main():
     parser.add_argument('--data', help='The image recognition dataset that should be used',
                         choices=['emoji', 'mnist', 'trafficsign'], required=True)
     parser.add_argument('--evaluation', help='The evaluation scheme that should be used',
-                        type=int, choices=[1, 2, 3], required=True)
+                        type=int, choices=[1, 2, 3, 4], required=True)
     parser.add_argument('--kernel-size', help='The height and the width of the kernel that should be used',
                         type=int, choices=[3, 7, 11, 15], required=True)
     parser.add_argument('--interpolation', help='The interpolation technique that should be used',
