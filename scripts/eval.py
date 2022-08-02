@@ -44,9 +44,10 @@ def main():
     runs = pd.read_csv(args.runs)
     generalization_metrics = []
     equivariance_metrics = []
-    for data in ['emoji']:  # TODO: add all datasets!
+    for data in ['emoji', 'trafficsign']:  # TODO: add all datasets!
         dataset = STIRDataset(path='{}.npz'.format(data))
         runs = runs[runs['params.data'] == data]  # Filter for dataset
+        runs = runs[runs['params.lr'] == 1e-3]  # Filter for learning rate
         for _, run in runs.iterrows():
             model_key, data_key, evaluation = run['params.model'], run['params.data'], run['params.evaluation']
             metadata = [model_key, data_key, evaluation]
@@ -57,14 +58,14 @@ def main():
             model.eval()
             # Compute the different metrics
             generalization_metrics.append(metadata + scale_generalization(model, dataset, device))
-            if model_key in ['standard', 'pixel_pool', 'slice_pool']:
+            if model_key in ['standard', 'pixel_pool', 'slice_pool'] and data == 'emoji':
                 equivariance_metrics.extend([metadata + s for s in scale_equivariance(model, dataset, device)])
     # Store results for scale generalization
-    generalization_columns = ['data', 'model', 'eval'] + ['s{}'.format(i) for i in range(17, 65)]
+    generalization_columns = ['model', 'data', 'eval'] + ['s{}'.format(i) for i in range(17, 65)]
     generalization_df = pd.DataFrame.from_records(generalization_metrics, columns=generalization_columns)
     generalization_df.to_csv('generalization.csv')
     # Store results for scale equivariance
-    equivariance_columns = ['data', 'model', 'eval', 'class', 'instance', 'node', 's_from', 's_to', 'error']
+    equivariance_columns = ['model', 'data', 'eval', 'class', 'instance', 'node', 's_from', 's_to', 'error']
     equivariance_df = pd.DataFrame.from_records(equivariance_metrics, columns=equivariance_columns)
     equivariance_df.to_csv('equivariance.csv')
 
