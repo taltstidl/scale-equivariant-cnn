@@ -63,8 +63,11 @@ def main():
             model.eval()
             # Compute the different metrics
             # generalization_metrics.append(metadata + scale_generalization(model, dataset, device))
-            np.savez_compressed(os.path.join(eval_path, 'indices.npz'),
-                                **scale_index_correlation(model, dataset, device))
+            # Compute scale to index correlation
+            accepted_model_keys = ['pixel_pool', 'slice_pool', 'energy_pool']
+            if model_key in accepted_model_keys:
+                np.savez_compressed(os.path.join(eval_path, 'indices.npz'),
+                                    **scale_index_correlation(model, dataset, device))
     # Store results for scale generalization
     # generalization_columns = ['model', 'data', 'eval'] + ['s{}'.format(i) for i in range(17, 65)]
     # generalization_df = pd.DataFrame.from_records(generalization_metrics, columns=generalization_columns)
