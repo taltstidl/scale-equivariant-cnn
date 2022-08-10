@@ -34,20 +34,21 @@ def color_box(boxplots, i, color):
 
 def plot_for_paper(runs, data, lr):
     """ Plot results for paper (with interp=bicubic and kernel=7x7). """
-    fig, axs = plt.subplots(nrows=1, ncols=3, sharey='all', figsize=(7.5, 2.0))
-    for eval in range(3):  # Loop over evaluation scenarios
+    fig, axs = plt.subplots(nrows=1, ncols=4, sharey='all', figsize=(7.5, 2.0))
+    for eval in range(4):  # Loop over evaluation scenarios
         axis = axs[eval]
         if eval == 0:
             axis.set_ylabel('Testing Accuracy [%]', fontname='Corbel')
         eval += 1  # Evaluation is 1-based, not 0-based
         axis.set_title('Evaluation {}'.format(eval), fontname='Corbel', fontsize=10)
+        lrs = 6 * [lr] if isinstance(lr, float) else lr  # expand single lr to list
         boxes = [
-            select(runs, eval=eval, data=data, model='standard', interp='bicubic', k=7, lr=lr),
-            select(runs, eval=eval, data=data, model='pixel_pool', interp='bicubic', k=7, lr=lr),
-            select(runs, eval=eval, data=data, model='slice_pool', interp='bicubic', k=7, lr=lr),
-            select(runs, eval=eval, data=data, model='conv3d', interp='bicubic', k=7, lr=lr),
-            select(runs, eval=eval, data=data, model='ensemble', interp='bicubic', k=7, lr=lr),
-            select(runs, eval=eval, data=data, model='spatial_transform', interp='bicubic', k=7, lr=lr),
+            select(runs, eval=eval, data=data, model='standard', interp='bicubic', k=7, lr=lrs[0]),
+            select(runs, eval=eval, data=data, model='pixel_pool', interp='bicubic', k=7, lr=lrs[1]),
+            select(runs, eval=eval, data=data, model='slice_pool', interp='bicubic', k=7, lr=lrs[2]),
+            select(runs, eval=eval, data=data, model='conv3d', interp='bicubic', k=7, lr=lrs[3]),
+            select(runs, eval=eval, data=data, model='ensemble', interp='bicubic', k=7, lr=lrs[4]),
+            select(runs, eval=eval, data=data, model='spatial_transform', interp='bicubic', k=7, lr=lrs[5]),
         ]
         labels = ['standard', 'pixel_pool', 'slice_pool', 'conv3d', 'ensemble', 'spatial_trans']
         colors = ['#00A3E0', '#43B02A', '#FFB81C', '#C8102E', '#779FB5', '#002F6C']
@@ -85,7 +86,7 @@ def main():
     # args = parser.parse_args()
     # Write plot to file
     runs = pd.read_csv('../scripts/runs.csv')
-    plot_for_paper(runs, data='emoji', lr=1e-2)
+    plot_for_paper(runs, data='emoji', lr=1e-3)
     plot_for_paper(runs, data='mnist', lr=1e-2)
     plot_for_paper(runs, data='trafficsign', lr=1e-3)
 

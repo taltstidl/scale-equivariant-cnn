@@ -8,7 +8,7 @@ import numpy as np
 
 def select(results, eval, model, data):
     """ Filter data table by model, dataset, interpolation and kernel size. """
-    rows = results[(results['data'] == model) & (results['model'] == data) &
+    rows = results[(results['data'] == data) & (results['model'] == model) &
                    (results['eval'] == eval)]
     acc_means = 100 * np.array([rows['s{}'.format(s)].mean() for s in range(17, 65)])
     acc_stds = 100 * np.array([rows['s{}'.format(s)].std() for s in range(17, 65)])
@@ -56,13 +56,14 @@ def plot_for_paper(results, data='emoji'):
             axis.legend([handles[4], handles[5]], labels[4:], **kwargs)
     plt.tight_layout()
     #plt.show()
-    plt.savefig('generalization.pdf', bbox_inches='tight')
+    plt.savefig('generalization_{}.pdf'.format(data), bbox_inches='tight')
 
 
 def main():
     # Write plot to file
     data = pd.read_csv('generalization.csv')
-    plot_for_paper(data)
+    plot_for_paper(data, data='emoji')
+    plot_for_paper(data, data='trafficsign')
 
 
 if __name__ == '__main__':
