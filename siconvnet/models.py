@@ -153,6 +153,37 @@ class SlicePoolModel(BaseModel):
         return x
 
 
+class EnergyPoolModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        self.conv1 = SiConv2d(self.num_channels, 16, num_scales[0], k, interp_mode=self.interpolation)
+        self.pool1 = ScalePool(mode='energy')
+        self.act1 = nn.ReLU()
+        self.conv2 = SiConv2d(16, 32, num_scales[1], k, interp_mode=self.interpolation)
+        self.pool2 = ScalePool(mode='energy')
+        self.act2 = nn.ReLU()
+        self.global_pool = GlobalMaxPool()
+        self.lin = nn.Linear(32, self.num_classes)
+
+    def forward(self, x):
+        """"""
+        x = self.conv1(x)
+        x = self.pool1(x)
+        x = self.act1(x)
+        self.save_trace('stage1', x)
+        x = self.conv2(x)
+        x = self.pool2(x)
+        x = self.act2(x)
+        self.save_trace('stage2', x)
+        x = self.global_pool(x)
+        self.save_trace('features', x)
+        x = self.lin(x)
+        self.save_trace('predictions', x)
+        return x
+
+
 class Conv3dModel(BaseModel):
     def __init__(self, **kwargs):
         """"""

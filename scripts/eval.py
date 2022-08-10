@@ -7,13 +7,14 @@ This supports the following parameters:
 import argparse
 import os
 
+import numpy as np
 import pandas as pd
 import torch
 
 from data.dataset import STIRDataset
-from siconvnet.metrics import scale_generalization, scale_equivariance
-from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, Conv3dModel, EnsembleModel, \
-    SpatialTransformModel
+from siconvnet.metrics import scale_generalization, scale_equivariance, scale_index_correlation
+from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, EnergyPoolModel, Conv3dModel, \
+    EnsembleModel, SpatialTransformModel
 
 
 def load_model(state_path, model, num_channels, num_classes):
@@ -22,6 +23,7 @@ def load_model(state_path, model, num_channels, num_classes):
         'standard': StandardModel,
         'pixel_pool': PixelPoolModel,
         'slice_pool': SlicePoolModel,
+        'energy_pool': EnergyPoolModel,
         'conv3d': Conv3dModel,
         'ensemble': EnsembleModel,
         'spatial_transform': SpatialTransformModel
@@ -41,33 +43,32 @@ def main():
     # Find the appropriate device (either GPU or CPU depending on availability)
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # Load the experiment data from all runs
-    runs = pd.read_csv(args.runs)
+    all_runs = pd.read_csv(args.runs)
+    all_runs = all_runs[all_runs['status'] == 'FINISHED']  # Filter for finished runs
     generalization_metrics = []
-    equivariance_metrics = []
     for data in ['emoji', 'trafficsign']:  # TODO: add all datasets!
         dataset = STIRDataset(path='{}.npz'.format(data))
-        runs = runs[runs['params.data'] == data]  # Filter for dataset
+        runs = all_runs[all_runs['params.data'] == data]  # Filter for dataset
         runs = runs[runs['params.lr'] == 1e-3]  # Filter for learning rate
         for _, run in runs.iterrows():
             model_key, data_key, evaluation = run['params.model'], run['params.data'], run['params.evaluation']
             metadata = [model_key, data_key, evaluation]
+            # Create new folder for evaluation results
+            eval_path = os.path.join('eval', run['run_id'])
+            os.makedirs(eval_path, exist_ok=True)
             # Load model, ensuring it's on the correct device and in evaluation mode
             state_path = os.path.join(args.models, run['run_id'], 'artifacts', 'model.pt')
             model = load_model(state_path, model_key, dataset.num_channels, dataset.num_classes)
             model.to(device)
             model.eval()
             # Compute the different metrics
-            generalization_metrics.append(metadata + scale_generalization(model, dataset, device))
-            if model_key in ['standard', 'pixel_pool', 'slice_pool'] and data == 'emoji':
-                equivariance_metrics.extend([metadata + s for s in scale_equivariance(model, dataset, device)])
+            # generalization_metrics.append(metadata + scale_generalization(model, dataset, device))
+            np.savez_compressed(os.path.join(eval_path, 'indices.npz'),
+                                **scale_index_correlation(model, dataset, device))
     # Store results for scale generalization
-    generalization_columns = ['model', 'data', 'eval'] + ['s{}'.format(i) for i in range(17, 65)]
-    generalization_df = pd.DataFrame.from_records(generalization_metrics, columns=generalization_columns)
-    generalization_df.to_csv('generalization.csv')
-    # Store results for scale equivariance
-    equivariance_columns = ['model', 'data', 'eval', 'class', 'instance', 'node', 's_from', 's_to', 'error']
-    equivariance_df = pd.DataFrame.from_records(equivariance_metrics, columns=equivariance_columns)
-    equivariance_df.to_csv('equivariance.csv')
+    # generalization_columns = ['model', 'data', 'eval'] + ['s{}'.format(i) for i in range(17, 65)]
+    # generalization_df = pd.DataFrame.from_records(generalization_metrics, columns=generalization_columns)
+    # generalization_df.to_csv('generalization.csv')
 
 
 if __name__ == '__main__':

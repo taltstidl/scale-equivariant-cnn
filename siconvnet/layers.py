@@ -211,20 +211,24 @@ class ScalePool(nn.Module):
     * Slice-wise Pooling (`slice`): This is an alternative to the standard pooling operation, where the slice
     containing the largest activation is used. Since the scales for each pixel are thus equal, the activations are
     better coordinated.
+    * Energy-wise Pooling (`energy`): This is an alternative to the standard pooling operation, where the slice
+    containing the largest sum of activations is used. Since the scales for each pixel are thus equal, the activations
+    are better coordinated. In addition, it may be more stable than pure slice-wise pooling.
 
     Parameters
     ----------
-    mode: Literal['pixel', 'slice']
-        Method used for pooling. Must be either pixel or slice. For the former, the maximum for each individual pixel
-        is returned, for the latter the slice with the largest activation is returned.
+    mode: Literal['pixel', 'slice', 'energy']
+        Method used for pooling. Must be either pixel, slice or energy. For the former, the maximum for each individual
+        pixel is returned, for the latter the slice with the largest activation or sum of activations is returned.
     """
 
     def __init__(self, mode: str = 'pixel'):
         """"""
         super().__init__()
-        if mode not in ['pixel', 'slice']:
-            raise ValueError('Pooling mode must be either `pixel` or `slice`, got {}'.format(mode))
+        if mode not in ['pixel', 'slice', 'energy']:
+            raise ValueError('Pooling mode must be either `pixel`, `slice` or `energy`, got {}'.format(mode))
         self.mode = mode
+        self.indices = None  # Book-keeping for activation indices
 
     def forward(self, x):
         """ Performs the pooling on the input.
@@ -239,13 +243,21 @@ class ScalePool(nn.Module):
         torch.Tensor
             Pooled feature maps, of shape (mini_batch, in_channels, height, width)
         """
+        num_scales, height, width = x.shape[-3], x.shape[-2], x.shape[-1]
         if self.mode == 'pixel':
-            num_scales = x.shape[-3]
-            return F.max_pool3d(x, kernel_size=(num_scales, 1, 1)).squeeze(dim=-3)
+            activations, indices = F.max_pool3d(x, kernel_size=(num_scales, 1, 1), return_indices=True)
+            indices = indices.squeeze(dim=-3)  # remove scale dim
+            self.indices = torch.div(indices, height * width, rounding_mode='trunc')
+            return activations.squeeze(dim=-3)
         if self.mode == 'slice':
-            num_scales, height, width = x.shape[-3], x.shape[-2], x.shape[-1]
-            _, act_index = F.max_pool3d(x, kernel_size=(num_scales, height, width), return_indices=True)
-            indices = act_index.repeat(1, 1, 1, height, width) // (height * width)
+            _, indices = F.max_pool3d(x, kernel_size=(num_scales, height, width), return_indices=True)
+            indices = indices.squeeze(dim=-3).squeeze(dim=-2).squeeze(dim=-1)  # remove scale, height and width dims
+            self.indices = torch.div(indices, height * width, rounding_mode='trunc')
+            indices = self.indices[:, :, None, None, None].repeat(1, 1, 1, height, width)
+            return x.gather(dim=-3, index=indices).squeeze(dim=-3)
+        if self.mode == 'energy':
+            self.indices = torch.sum(x, dim=(-2, -1)).argmax(dim=-1)
+            indices = self.indices[:, :, None, None, None].repeat(1, 1, 1, height, width)
             return x.gather(dim=-3, index=indices).squeeze(dim=-3)
 
 

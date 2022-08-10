@@ -25,6 +25,17 @@ def _interpolate_image(activation, target_scale):
 
 
 def scale_generalization(model, dataset, device):
+    """ Saves performances computed per scale for later analysis.
+
+    Parameters
+    ----------
+    model: torch.nn.Module
+        Image classification network that should be analyzed.
+    dataset: STIRDataset
+        Dataset from which to pull images for classification.
+    device: torch.Device
+        Device on which computations take place, usually either CPU or GPU.
+    """
     # Retrieve images and labels from dataset in a data loader
     images, labels = dataset.to_numpy(split='test', scales=range(17, 65), shuffle=False)
     tensor_images = torch.tensor(images, dtype=torch.float).to(device)
@@ -47,6 +58,21 @@ def scale_generalization(model, dataset, device):
 
 
 def scale_equivariance(model, dataset, device):
+    """ Saves equivariance of feature maps and vectors for later analysis.
+
+    Equivariance is computed for pairs of images at different scales. Feature maps are resized to the reference scale
+    using bicubic interpolation. Feature vectors are left untouched.
+
+    Parameters
+    ----------
+    model: siconvnet.models.BaseModel
+        Image classification network that should be analyzed. Must save traces for 'stage1', 'stage2', 'features'
+        and 'predictions', for which equivariance is computed.
+    dataset: STIRDataset
+        Dataset from which to pull images for classification.
+    device: torch.Device
+        Device on which computations should take place, usually either CPU or GPU.
+    """
     # Retrieve images from dataset
     images = dataset.images[2]
     if len(images.shape) == 5:
@@ -97,5 +123,32 @@ def scale_equivariance(model, dataset, device):
     return scale_errors
 
 
-def scale_index_correlation():
-    pass
+def scale_index_correlation(model, dataset, device):
+    """ Saves pooling indices along the scale axis for later analysis.
+
+    Parameters
+    ----------
+    model: torch.nn.Module
+        Image classification network that should be analyzed. Must contain scale pooling layers pool1 and pool2, for
+        which pooling indices are computed.
+    dataset: STIRDataset
+        Dataset from which to pull images for classification.
+    device: torch.Device
+        Device on which computations take place, usually either CPU or GPU.
+    """
+    # Retrieve images and labels from dataset in a data loader
+    images, labels = dataset.to_numpy(split='test', scales=range(17, 65), shuffle=False)
+    tensor_images = torch.tensor(images, dtype=torch.float).to(device)
+    data_loader = DataLoader(tensor_images, batch_size=16, shuffle=False)
+    # Compute predictions across all scales
+    pool1_indices, pool2_indices = [], []
+    with torch.no_grad():
+        for image_batch in data_loader:
+            _ = model(image_batch)
+            pool1_index_batch = model.pool1.indices
+            pool1_indices.append(pool1_index_batch.detach().cpu().numpy())
+            pool2_index_batch = model.pool2.indices
+            pool2_indices.append(pool2_index_batch.detach().cpu().numpy())
+    pool1_indices = np.concatenate(pool1_indices)
+    pool2_indices = np.concatenate(pool2_indices)
+    return {'pool1': pool1_indices, 'pool2': pool2_indices}

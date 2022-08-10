@@ -21,7 +21,8 @@ import numpy as np
 import torch
 
 from siconvnet.data import STIRDataModule
-from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, Conv3dModel, EnsembleModel, SpatialTransformModel
+from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, EnergyPoolModel, Conv3dModel, \
+    EnsembleModel, SpatialTransformModel
 
 
 class Metrics:
@@ -181,7 +182,8 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',
-                        choices=['standard', 'pixel_pool', 'slice_pool', 'conv3d', 'ensemble', 'spatial_transform'],
+                        choices=['standard', 'pixel_pool', 'slice_pool', 'energy_pool', 'conv3d', 'ensemble',
+                                 'spatial_transform'],
                         required=True)
     parser.add_argument('--data', help='The image recognition dataset that should be used',
                         choices=['emoji', 'mnist', 'trafficsign'], required=True)
@@ -210,6 +212,7 @@ def main():
         'standard': StandardModel,
         'pixel_pool': PixelPoolModel,
         'slice_pool': SlicePoolModel,
+        'energy_pool': EnergyPoolModel,
         'conv3d': Conv3dModel,
         'ensemble': EnsembleModel,
         'spatial_transform': SpatialTransformModel
