@@ -146,9 +146,9 @@ def scale_index_correlation(model, dataset, device):
         for image_batch in data_loader:
             _ = model(image_batch)
             pool1_index_batch = model.pool1.indices
-            pool1_indices.append(pool1_index_batch.detach().cpu().numpy())
+            pool1_indices.append(pool1_index_batch.detach().cpu().numpy().astype(np.uint8))
             pool2_index_batch = model.pool2.indices
-            pool2_indices.append(pool2_index_batch.detach().cpu().numpy())
+            pool2_indices.append(pool2_index_batch.detach().cpu().numpy().astype(np.uint8))
     pool1_indices = np.concatenate(pool1_indices)
     pool2_indices = np.concatenate(pool2_indices)
     return {'pool1': pool1_indices, 'pool2': pool2_indices}
