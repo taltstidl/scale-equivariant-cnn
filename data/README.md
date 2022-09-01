@@ -11,8 +11,9 @@ Depending on which data you are planning to use, download one or more of the fol
 | `emoji.npz` | Emoji vector icons rendered as white icon on black background | [on Zenodo]() |
 | `mnist.npz` | Classic MNIST handwritten digits rescaled to varying sizes | [on Zenodo]() |
 | `trafficsign.npz` | Traffic signs from street imagery downscaled to varying sizes | [on Zenodo]() |
+| `aerial.npz` | Objects in aerial imagery downscaled to varying sizes | [on Zenodo]() |
 
-Each file contains multiple arrays that can be accessed in a dictionary-like fashion. The keys are documented below, where `n` is the number of classes for a given file and `m` is the number of instances for each class. Both `emoji.npz` (36 classes, 1 instance) and `mnist.npz` (10 classes, 50 instances) are in black & white while `trafficsign.npz` (16 classes, 25 instances) is in color.
+Each file contains multiple arrays that can be accessed in a dictionary-like fashion. The keys are documented below, where `n` is the number of classes for a given file and `m` is the number of instances for each class. Both `emoji.npz` (36 classes, 1 instance) and `mnist.npz` (10 classes, 50 instances) are in black & white while `trafficsign.npz` (16 classes, 25 instances) and `aerial.npz` (9 classes, 25 instances) are in color.
 
 | Key | Shape | Description |
 | --- | ----- | ----------- |
@@ -42,6 +43,15 @@ label_descriptions = dataset.labeldata
 
 The scripts for generating the datasets are provided for transparency and reproducibility. They are prefixed by `gen_*` and should run without arguments. Downloaded files expected within the working directory are given below.
 
+* `dota/` (from [DOTA v1.5 Google Drive](https://captain-whu.github.io/DOTA/dataset.html) website)
+  * `train/`
+    * `DOTA-v1.5_train.zip` **not** unzipped
+    * `part1.zip` **not** unzipped
+    * `part2.zip` **not** unzipped
+    * `part3.zip` **not** unzipped
+  * `val/`
+    * `DOTA-v1.5_val.zip` **not** unzipped
+    * `part1.zip` **not** unzipped
 * `fontawesome/` (from [Font Awesome](https://fontawesome.com/v5/download) 5.15.3 "Free for Desktop")
   * `svgs/` unzipped from archive
 * `mapillary/` (from [Mapillary Traffic Sign Dataset](https://www.mapillary.com/dataset/trafficsign))

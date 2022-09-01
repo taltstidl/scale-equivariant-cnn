@@ -13,7 +13,7 @@ import warnings
 from zipfile import ZipFile
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 
 def create_database(split='train'):
@@ -98,7 +98,7 @@ def generate():
     if not os.path.exists('signs.db'):
         create_database(split='train')
         create_database(split='val')
-    # Find suitable object classes (at least 48 with width equals height)
+    # Find suitable object classes (at least 75 with width equals height)
     conn = sqlite3.connect('signs.db')
     classes = conn.execute('SELECT label, COUNT(*) AS count FROM objects WHERE ABS(width - height) < 5 '
                            'GROUP BY label HAVING count >= 75')
@@ -116,7 +116,7 @@ def generate():
     translations = [[[[] for _ in range(num_instances)] for _ in range(48)] for _ in range(3)]
     # Generate scaled images for each object class
     current_sign = -1
-    for index, (label, _) in enumerate(classes):  # 40 different traffic signs
+    for index, (label, _) in enumerate(classes):  # 16 different traffic signs
         objects = conn.execute('SELECT * FROM objects WHERE label = ? AND ABS(width - height) < 5 '
                                'ORDER BY MIN(width, height) DESC LIMIT 75', (label,))
         objects = list(objects)
@@ -130,7 +130,7 @@ def generate():
         # Split traffic signs into training, validation and testing
         splits = objects[0::3], objects[1::3], objects[2::3]
         for i in range(num_instances):  # 25 different images per traffic sign
-            for j, scale in enumerate(range(64, 16, -1)):  # 32 different scales
+            for j, scale in enumerate(range(64, 16, -1)):  # 48 different scales
                 for k in range(3):  # 3 sets (training, validation, testing)
                     sign, translation = extract_sign_from_image(splits[k][i], scale, zip_files)
                     images[k][j][i].append(sign)

@@ -150,8 +150,8 @@ mlruns*/
 # PyCharm settings
 .idea/
 
-# Mapillary data
-trafficsign/mapillary/
-trafficsign/*.zip
-trafficsign/*.db
-trafficsign/signs
+# Data directories
+data/dota/
+data/fontawesome/
+data/mapillary/
+data/mnist/
