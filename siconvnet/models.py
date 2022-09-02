@@ -2,13 +2,14 @@
 """
 This module contains the models presented in the paper.
 """
-import numpy as np
 import torch
 import torch.nn.functional as F
 from kornia.geometry import build_pyramid
 from torch import nn
 
 from siconvnet.layers import SiConv2d, ScalePool, GlobalMaxPool
+from siconvnet.contrib.xu import XuConv2d
+from siconvnet.contrib.kanazawa import KanazawaConv2d
 
 
 class BaseModel(nn.Module):
@@ -272,4 +273,65 @@ class SpatialTransformModel(BaseModel):
         """"""
         x = self.transform(x)
         return self.base_model(x)
+
+
+class XuModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        self.kernel_sizes = [3, 5, 7, 9, 11]
+        self.conv1 = XuConv2d(self.num_channels, 16, k, self.kernel_sizes, initial=True)
+        self.act1 = nn.ReLU()
+        self.conv2 = XuConv2d(16, 32, k, self.kernel_sizes)
+        self.act2 = nn.ReLU()
+        self.global_pool = GlobalMaxPool()
+        self.lin = nn.Linear(32, self.num_classes)
+
+    def column_pool(self, x):
+        """"""
+        b, c, h, w = x.shape
+        x = x.view(b, len(self.kernel_sizes), c // len(self.kernel_sizes), h, w)
+        x = x.max(dim=1)[0]
+        return x
+
+    def forward(self, x):
+        """"""
+        x = self.conv1(x)
+        x = self.act1(x)
+        x = self.conv2(x)
+        x = self.act2(x)
+        x = self.column_pool(x)
+        x = self.global_pool(x)
+        x = self.lin(x)
+        return x
+
+
+class KanazawaModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        self.scales = [1.26**e for e in range(-2, 4)]
+        self.conv1 = KanazawaConv2d(self.num_channels, 16, k, self.scales)
+        self.act1 = nn.ReLU()
+        self.conv2 = KanazawaConv2d(16, 32, k, self.scales)
+        self.act2 = nn.ReLU()
+        self.global_pool = GlobalMaxPool()
+        self.lin = nn.Linear(32, self.num_classes)
+
+    def forward(self, x):
+        """"""
+        x = self.conv1(x)
+        x = self.act1(x)
+        self.save_trace('stage1', x)
+        x = self.conv2(x)
+        x = self.act2(x)
+        self.save_trace('stage2', x)
+        x = self.global_pool(x)
+        self.save_trace('features', x)
+        x = self.lin(x)
+        self.save_trace('predictions', x)
+        return x
+
 
