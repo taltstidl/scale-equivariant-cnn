@@ -42,26 +42,26 @@ class XuConv2d(nn.Conv2d):
 
     def _get_transformed_kernel(self):
         """ Returns stack of scaled and interpolated kernels usable for convolution groups. """
-        pad = (self.max_kernel_size - self.kernel_size) // 2
+        pad = (self.max_kernel_size - self.kernel_size[0]) // 2
         kernel = F.pad(self.weight, (pad, pad, pad, pad))
         kernel_norm = torch.norm(kernel, p=1, dim=(2, 3), keepdim=True)
         scaled_kernels = []
         for size in self.kernel_sizes:
-            # Upscaling is an ill-posed problem. In the original paper, the upscaling method is chosen to give
-            # a solution with smallest l2 norm. For the case of `bilinear` downscaling, it is `nearest` upscaling.
-            mode = 'nearest' if size > self.kernel_size else 'bilinear'
-            scaled_kernel = self._rescale4d(kernel, size, mode)
+            scaled_kernel = self._rescale4d(kernel, size)
             scaled_kernel_norm = torch.norm(scaled_kernel, p=1, dim=(2, 3), keepdim=True)
             scaled_kernel = scaled_kernel * kernel_norm / scaled_kernel_norm
             scaled_kernels.append(scaled_kernel)
         return torch.cat(scaled_kernels)
 
-    def _rescale4d(self, x: torch.Tensor, size, mode):
+    def _rescale4d(self, x: torch.Tensor, size):
         """ Rescales a 4D tensor while preserving its shape. """
-        if size == self.kernel_size:
+        if size == self.kernel_size[0]:
             return x
         # Interpolate input image or feature map
-        rescaled_x = F.interpolate(x, size=(size, size), mode=mode, align_corners=True)
+        if size > self.kernel_size[0]:  # `nearest` upscaling, method with smallest l2 norm paired with bilinear
+            rescaled_x = F.interpolate(x, size=(size, size), mode='nearest')
+        else:  # `bilinear` downscaling
+            rescaled_x = F.interpolate(x, size=(size, size), mode='bilinear', align_corners=True)
         # Apply appropriate zero padding (amount may be negative if output is larger)
         _, _, H, W = x.shape
         _, _, h, w = rescaled_x.shape
