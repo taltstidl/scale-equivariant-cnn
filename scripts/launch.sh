@@ -11,7 +11,7 @@ do
   do
     for evaluation in "${evaluations[@]}"
     do
-      sbatch train.sh $model $dataset $evaluation 7 bicubic 1e-2 50
+      sbatch train.sh $model $dataset $evaluation 7 bicubic 1e-2 1 50
     done
   done
 done
