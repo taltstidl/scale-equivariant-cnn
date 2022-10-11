@@ -22,7 +22,7 @@ import torch
 
 from siconvnet.data import STIRDataModule
 from siconvnet.models import StandardModel, PixelPoolModel, SlicePoolModel, EnergyPoolModel, Conv3dModel, \
-    EnsembleModel, SpatialTransformModel, XuModel, KanazawaModel
+    EnsembleModel, SpatialTransformModel, XuModel, KanazawaModel, HermiteModel, DiscoModel
 
 
 class Metrics:
@@ -183,7 +183,7 @@ def main():
     parser = argparse.ArgumentParser(description='Command-line interface for training models.')
     parser.add_argument('--model', help='The model type that should be trained',
                         choices=['standard', 'pixel_pool', 'slice_pool', 'energy_pool', 'conv3d', 'ensemble',
-                                 'spatial_transform', 'xu', 'kanazawa'],
+                                 'spatial_transform', 'xu', 'kanazawa', 'hermite', 'disco'],
                         required=True)
     parser.add_argument('--data', help='The image recognition dataset that should be used',
                         choices=['emoji', 'mnist', 'trafficsign', 'aerial'], required=True)
@@ -218,6 +218,8 @@ def main():
         'spatial_transform': SpatialTransformModel,
         'xu': XuModel,
         'kanazawa': KanazawaModel,
+        'hermite': HermiteModel,
+        'disco': DiscoModel,
     }
     data = STIRDataModule(data=args.data, batch_size=16, evaluation=args.evaluation)
     network = network_map[args.model](kernel_size=args.kernel_size, interpolation=args.interpolation,

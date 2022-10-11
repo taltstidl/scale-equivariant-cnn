@@ -10,6 +10,7 @@ from torch import nn
 from siconvnet.layers import SiConv2d, ScalePool, GlobalMaxPool
 from siconvnet.contrib.xu import XuConv2d
 from siconvnet.contrib.kanazawa import KanazawaConv2d
+from siconvnet.contrib.steerable import SESConv_Z2_H, SESConv_H_H
 
 
 class BaseModel(nn.Module):
@@ -335,3 +336,69 @@ class KanazawaModel(BaseModel):
         return x
 
 
+class HermiteModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        self.scales = [2.0, 2.52, 3.17, 4.0]
+        basis_kwargs = {
+            'basis_type': 'hermite_b',
+            'basis_mult': 1.5,
+            'basis_max_order': 4,
+        }
+        self.conv1 = SESConv_Z2_H(self.num_channels, 16, 15, k, bias=True, scales=self.scales, **basis_kwargs)
+        self.act1 = nn.ReLU()
+        self.conv2 = SESConv_H_H(16, 32, 1, 15, k, bias=True, scales=self.scales, **basis_kwargs)
+        self.act2 = nn.ReLU()
+        self.global_pool = GlobalMaxPool()
+        self.lin = nn.Linear(32, self.num_classes)
+
+    def forward(self, x):
+        """"""
+        x = self.conv1(x)
+        x = self.act1(x)
+        self.save_trace('stage1', x)
+        x = self.conv2(x)
+        x = self.act2(x)
+        self.save_trace('stage2', x)
+        x = self.global_pool(x)
+        self.save_trace('features', x)
+        x = self.lin(x)
+        self.save_trace('predictions', x)
+        return x
+
+
+class DiscoModel(BaseModel):
+    def __init__(self, **kwargs):
+        """"""
+        super().__init__(**kwargs)
+        k, num_scales = self.compute_params()
+        self.scales = [1.0, 1.26, 1.59, 2.0]
+        basis_kwargs = {
+            'basis_type': 'disco_b',
+            'basis_mult': 1.9,
+            'basis_max_order': 4,
+            'basis_min_scale': 1.9,
+            'basis_save_dir': '../siconvnet/contrib',
+        }
+        self.conv1 = SESConv_Z2_H(self.num_channels, 16, 15, k, bias=True, scales=self.scales, **basis_kwargs)
+        self.act1 = nn.ReLU()
+        self.conv2 = SESConv_H_H(16, 32, 1, 15, k, bias=True, scales=self.scales, **basis_kwargs)
+        self.act2 = nn.ReLU()
+        self.global_pool = GlobalMaxPool()
+        self.lin = nn.Linear(32, self.num_classes)
+
+    def forward(self, x):
+        """"""
+        x = self.conv1(x)
+        x = self.act1(x)
+        self.save_trace('stage1', x)
+        x = self.conv2(x)
+        x = self.act2(x)
+        self.save_trace('stage2', x)
+        x = self.global_pool(x)
+        self.save_trace('features', x)
+        x = self.lin(x)
+        self.save_trace('predictions', x)
+        return x
