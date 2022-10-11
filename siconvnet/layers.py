@@ -225,7 +225,7 @@ class ScalePool(nn.Module):
     def __init__(self, mode: str = 'pixel'):
         """"""
         super().__init__()
-        if mode not in ['pixel', 'slice', 'energy']:
+        if mode not in ['pixel', 'slice', 'energy', 'energy_alt']:
             raise ValueError('Pooling mode must be either `pixel`, `slice` or `energy`, got {}'.format(mode))
         self.mode = mode
         self.indices = None  # Book-keeping for activation indices
@@ -257,6 +257,12 @@ class ScalePool(nn.Module):
             return x.gather(dim=-3, index=indices).squeeze(dim=-3)
         if self.mode == 'energy':
             self.indices = torch.sum(x, dim=(-2, -1)).argmax(dim=-1)
+            indices = self.indices[:, :, None, None, None].repeat(1, 1, 1, height, width)
+            return x.gather(dim=-3, index=indices).squeeze(dim=-3)
+        if self.mode == 'energy_alt':
+            activations = F.avg_pool3d(x, kernel_size=(1, height, width)).squeeze(dim=-2).squeeze(dim=-1)
+            _, indices = F.max_pool1d(activations, kernel_size=(num_scales,), return_indices=True)
+            self.indices = indices.squeeze(dim=-1)  # remove scale dim
             indices = self.indices[:, :, None, None, None].repeat(1, 1, 1, height, width)
             return x.gather(dim=-3, index=indices).squeeze(dim=-3)
 
