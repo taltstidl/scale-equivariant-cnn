@@ -9,4 +9,8 @@ module load python/3.8-anaconda
 source .venv/bin/activate
 export PYTHONPATH=.
 
-srun python3 scripts/eval.py --runs runs-mlflow.csv --models mlruns
+evals=( --generalization --equivariance --index-correlation )
+srun python3 scripts/eval.py --runs runs-mlflow.csv --models mlruns --data emoji "${evals[@]}"
+srun python3 scripts/eval.py --runs runs-mlflow.csv --models mlruns --data mnist "${evals[@]}"
+srun python3 scripts/eval.py --runs runs-mlflow.csv --models mlruns --data trafficsign "${evals[@]}"
+srun python3 scripts/eval.py --runs runs-mlflow.csv --models mlruns --data aerial "${evals[@]}"

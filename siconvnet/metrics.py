@@ -80,14 +80,17 @@ def scale_equivariance(model, dataset, device):
     num_classes, num_instances = images.shape[1:3]
     # Retrieve known scales and positions from dataset
     scales, positions = dataset.scales[2], dataset.positions[2]
+    # Create empty arrays for errors
+    errors_stage1 = np.empty(shape=(num_classes, num_instances, 6))
+    errors_stage2 = np.empty(shape=(num_classes, num_instances, 6))
     # Go over each individual image
-    scale_errors = []
     for ci in range(num_classes):
         for ii in range(num_instances):
-            # Retrieve images, scales and positions (should be 5 each)
-            instance_images = images[:33:8, ci, ii].transpose((0, 3, 1, 2))
-            instance_scales = scales[:33:8, ci, ii]
-            instance_positions = positions[:33:8, ci, ii]
+            # Retrieve images, scales and positions
+            idx = [0, 15, 16, 31, 32, 47]  # Scales 64x64, 49x49, 48x48, 33x33, 32x32, and 17x17
+            instance_images = images[idx, ci, ii].transpose((0, 3, 1, 2))
+            instance_scales = scales[idx, ci, ii]
+            instance_positions = positions[idx, ci, ii]
             with torch.no_grad():
                 # Gather feature maps and vectors
                 model.enable_tracing()
@@ -96,31 +99,17 @@ def scale_equivariance(model, dataset, device):
                 model.disable_tracing()
                 # Feature map tensors are of shape (num_scales, num_filters, size, size)
                 stage1, stage2 = traces['stage1'], traces['stage2']
-                # Feature vector tensors are of shape (num_scales, size)
-                features, predictions = traces['features'], traces['predictions']
                 # Crop feature map tensors such that only object remains
-                stage1 = [_crop_image(stage1[i], instance_scales[i], instance_positions[i]) for i in range(5)]
-                stage2 = [_crop_image(stage2[i], instance_scales[i], instance_positions[i]) for i in range(5)]
+                stage1 = [_crop_image(stage1[i], instance_scales[i], instance_positions[i]) for i in range(6)]
+                stage2 = [_crop_image(stage2[i], instance_scales[i], instance_positions[i]) for i in range(6)]
                 # Compute pair-wise L2 norm between feature map/vector tensors at different scales
-                for i, scale_ref in enumerate(instance_scales):
-                    for j, scale in enumerate(instance_scales):
-                        if scale == scale_ref:
-                            continue
+                for stage, errors in zip([stage1, stage2], [errors_stage1, errors_stage2]):
+                    for i, (si, sj) in [(0, 1), (1, 0), (2, 3), (3, 2), (4, 5), (5, 4)]:
                         # Compute errors for each filter of the first stage
-                        ref, interp = stage1[i], _interpolate_image(stage1[j], scale_ref - 6)
+                        ref, interp = stage[si], _interpolate_image(stage[sj], stage[si].shape[-1])
                         error = LA.vector_norm(ref - interp)**2 / LA.vector_norm(ref)**2
-                        scale_errors.append([ci, ii, 'stage1', scale, scale_ref, error.cpu().item()])
-                        # Compute errors for each filter of the second stage
-                        ref, interp = stage2[i], _interpolate_image(stage2[j], scale_ref - 12)
-                        error = LA.vector_norm(ref - interp)**2 / LA.vector_norm(ref)**2
-                        scale_errors.append([ci, ii, 'stage2', scale, scale_ref, error.cpu().item()])
-                        # Compute errors for features
-                        error = LA.vector_norm(features[i] - features[j])**2 / LA.vector_norm(features[i])**2
-                        scale_errors.append([ci, ii, 'features', scale, scale_ref, error.cpu().item()])
-                        # Compute errors for predictions
-                        error = LA.vector_norm(predictions[i] - predictions[j])**2 / LA.vector_norm(predictions[i])**2
-                        scale_errors.append([ci, ii, 'predictions', scale, scale_ref, error.cpu().item()])
-    return scale_errors
+                        errors[ci, ii, i] = error.cpu().item()
+    return {'stage1': errors_stage1, 'stage2': errors_stage2}
 
 
 def scale_index_correlation(model, dataset, device):
