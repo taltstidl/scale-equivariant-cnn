@@ -104,7 +104,7 @@ def scale_equivariance(model, dataset, device):
                 stage2 = [_crop_image(stage2[i], instance_scales[i], instance_positions[i]) for i in range(6)]
                 # Compute pair-wise L2 norm between feature map/vector tensors at different scales
                 for stage, errors in zip([stage1, stage2], [errors_stage1, errors_stage2]):
-                    for i, (si, sj) in [(0, 1), (1, 0), (2, 3), (3, 2), (4, 5), (5, 4)]:
+                    for i, (si, sj) in enumerate([(0, 1), (1, 0), (2, 3), (3, 2), (4, 5), (5, 4)]):
                         # Compute errors for each filter of the first stage
                         ref, interp = stage[si], _interpolate_image(stage[sj], stage[si].shape[-1])
                         error = LA.vector_norm(ref - interp)**2 / LA.vector_norm(ref)**2
