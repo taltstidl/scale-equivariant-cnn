@@ -159,7 +159,7 @@ def generate():
         ['version', '1.0.0'],
         ['date', '31 August 2022']
     ])
-    lbldata = np.array(classes)
+    lbldata = np.array([label for (label, _) in classes])
     # Save data file
     imgs = np.array(images).swapaxes(2, 3)
     lbls = np.array(labels).swapaxes(2, 3)
