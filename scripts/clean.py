@@ -58,6 +58,8 @@ def check_selected_runs():
                     s, t = num_runs_selected + 1, num_runs_targeted
                     lr = '1e-2' if perf_1e2 > perf_1e3 else '1e-3'
                     print('sbatch train.sh {} {} {} 7 bicubic {} {} {}'.format(model, dataset, evaluation, lr, s, t))
+                if num_runs_targeted != num_runs_selected:
+                    runs_selected = runs_selected.tail(num_runs_targeted)
                 runs_collected.append(runs_selected)
     clean = pd.concat(runs_collected)
     clean.to_csv('clean.csv', index=False)
