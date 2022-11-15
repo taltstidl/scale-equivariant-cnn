@@ -26,7 +26,7 @@ To properly evaluate the ability of CNN-based models to generalize towards previ
 
 ## Usage of Proposed Layer
 
-If you are interested in using our proposed layer in your own work, the easiest way to do so is to copy `layers.py`. It primarily contains two layers of interest:
+If you are interested in using our proposed layer in your own work, the easiest way to do so is to copy `layers.py` into your own project. It primarily contains two layers of interest:
 
 * `SiConv2d` implements the scaled convolutional layer described in Sec. 3.1 of the paper. See docstring for further details on its parameters.
 * `ScalePool` implements the pooling required to collapse the additional dimension. See docstring for further details on its parameters.
