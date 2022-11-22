@@ -73,13 +73,14 @@ def main():
         # Compute scale equivariance
         if args.equivariance:
             accepted_model_keys = ['standard', 'pixel_pool', 'slice_pool', 'energy_pool', 'kanazawa']
-            if model_key in accepted_model_keys:
+            accepted_data_keys = ['emoji', 'mnist', 'trafficsign']
+            if model_key in accepted_model_keys and data_key in accepted_data_keys:
                 np.savez_compressed(os.path.join(eval_path, 'errors.npz'),
                                     **scale_equivariance(model, dataset, device))
         # Compute scale to index correlation
         if args.index_correlation:
-            accepted_model_keys = ['slice_pool', 'energy_pool']
-            if model_key in accepted_model_keys:
+            accepted_run_ids = ['f60d2e453691424ea05bbbe7c5e17289', 'eb15992b30214d36b71b1c00cfd2524d']
+            if run['run_id'] in accepted_run_ids:
                 np.savez_compressed(os.path.join(eval_path, 'indices.npz'),
                                     **scale_index_correlation(model, dataset, device))
     if args.generalization:
