@@ -1,11 +1,63 @@
 # Just a Matter of Scale? Scale Equivariance in CNNs
 
-This repository contains the source code for the paper "Just a Matter of Scale? Reevaluating Scale Equivariance in Convolutional Neural Networks". It is split into multiple modules.
+> **Note** A detailed analysis of scale generalization for various models is given in our preprint
+> 
+> [Just a Matter of Scale? Reevaluating Scale Equivariance in Convolutional Neural Networks](https://arxiv.org/abs/2211.10288)  
+> **Thomas Altstidl, An Nguyen, Leo Schwinn, Franz Köferl, Christopher Mutschler, Björn Eskofier, Dario Zanca**
 
-* `data/` contains the code for generating the Scaled and Translated Image Recognition (STIR) benchmark
-* `plots/` contains the code for creating the plots given in the paper and supplementary material
-* `scripts/` contains the code for training and evaluating all models
-* `siconvnet/` contains the actual implementation of all layers and models
+This repository contains the official source code accompanying our preprint. If you are reading this, it is likely that you fall into one or more of the following groups. Click on those that are applicable for you to get started.
+
+<details>
+<summary><strong>I am interested in using the Scaled and Translated Image Recognition (STIR) dataset.</strong></summary>
+
+* Download one or more data files from [Zenodo](https://zenodo.org/record/6578038).
+* Grab a copy of [dataset.py](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/data/dataset.py).
+* Example usage that loads training data from `emoji.npz` for scales 17 through 64.
+```python
+from dataset import STIRDataset
+
+dataset = STIRDataset('data/emoji.npz')
+# Obtain images and labels for training
+images, labels = dataset.to_torch(split='train', scales=range(17, 65), shuffle=True)
+# Obtain known scales and positions for above
+scales, positions = dataset.get_latents(split='train', scales=range(17, 65), shuffle=True)
+# Get metadata and label descriptions
+metadata = dataset.metadata
+label_descriptions = dataset.labeldata
+```
+</details>
+
+<details>
+<summary><strong>I am interested in reviewing your results.</strong></summary>
+
+We provide a subset of our results for review. Others are available upon request as they are larger in size.
+* [clean.csv](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/scripts/clean.csv) contains testing accuracy and time (columns `metrics.test_acc` and `metrics.train_time`)
+* [generalization.csv](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/plots/generalization.csv) contains accuracies per scale (columns `s17` through `s64`)
+</details>
+
+<details>
+<summary><strong>I am interested in using the proposed layer in my own work.</strong></summary>
+
+* Grab a copy of [layers.py](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/siconvnet/layers.py).
+* Example usage that applies one 7x7 scaled convolutional layer followed by pixel-wise pooling.
+```python
+from torch import nn
+from layers import SiConv2d, ScalePool
+
+class MyModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 7x7 base kernel rescaled to 29 different scales
+        self.conv = SiConv2d(3, 16, 29, 7, interp_mode='bicubic')
+        self.pool = ScalePool(mode='pixel')
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.pool(x)
+```
+</details>
+
+The remainer of this document will focus on reproducing the results given in our preprint.
 
 ## Setting up environment
 
