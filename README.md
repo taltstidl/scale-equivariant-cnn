@@ -59,7 +59,13 @@ class MyModel(nn.Module):
 
 The remainer of this document will focus on reproducing the results given in our preprint.
 
-## Setting up environment
+## Reproducing Results
+
+> **Warning**
+>
+> While we have taken great care to document everything, the scope of this project makes it likely that minor details may still be missing. If you have trouble recreating our experiments on your own machines, please create a new [issue](https://github.com/taltstidl/scale-equivariant-cnn/issues/new/choose) and we'd be more than happy to assist.
+
+### Setting up environment
 
 The provided code should work in most environments and has been tested to work at least in Windows 10/11 (local environment) and Linux (cluster node environment). Python 3.8 was used, although newer versions should also work. We recommend creating a new virtual environment and installing all requirements there:
 
@@ -70,9 +76,9 @@ source .venv/bin/activate
 pip install requirements.txt
 ```
 
-## Training models
+### Training models
 
-Before training a model, you will need to either create or download the respective dataset you intend to use. See the `data/` folder for additional instructions. Then, execute the following script with your selected parameters to train a single model.
+Before training a model, you will need to either create or download the respective data files you intend to use. These can be downloaded from [Zenodo](https://zenodo.org/record/6578038). Then, execute the following script with your selected parameters to train a single model.
 
 ```bash
 python scripts/train.py [...]
@@ -93,14 +99,33 @@ Learning rate of Adam optimizer used to train model.
 * **--seed** _number_
 Seed used to initialize random number generators for reproducibility. Seeds used in paper are 1 through 50.
 
-## Generating plots
+### Evaluating models
 
-To recreate the plots given in the paper and in the supplementary document you may use the scripts provided in the `plots/` directory. All of them require result files, which are provided with the code.
+The training script writes results to MLflow. Before proceeding with the evaluation, you need to export all runs. Unless you changed the tracking destination, this is done using the following command. We provide our own filtered export in [clean.csv](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/scripts/clean.csv).
+
+```bash
+mlflow experiments csv -x 0 -o clean.csv
+```
+
+Then, execute the following script with your selected parameters to evaluate all models.
+
+```bash
+python scripts/eval.py [...]
+```
+
+* **--runs** _path/to/clean.csv_ Path to the exported runs from MLflow. Should point to file exported using above command.
+* **--models** _path/to/models_ Path to the run artifacts saved by MLflow. Should be `mlruns/0` when run locally.
+* **--data** _{emoji, mnist, trafficsign, aerial}_ Name of dataset for which models should be evaluated.
+* **--generalization** Flag for scale generalization. If enabled, will write `generalization_*.csv` files.
+* **--equivariance** Flag for scale equivariance. If enabled, will write `eval/*/errors.npz` files.
+* **--index-correlation** Flag for pooling scale correlation. If enabled, will write `eval/*/indices.npz` files.
+
+### Generating plots
+
+To recreate the plots given in the paper and in the supplementary document you may use the scripts provided in the `plots/` directory. We provide [clean.csv](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/scripts/clean.csv) and [generalization.csv](https://github.com/taltstidl/scale-equivariant-cnn/blob/main/plots/generalization.csv) here. Others are available upon request as they are larger in size.
 
 * **`equivariance.py`** was used for Fig. 6 & Suppl. Fig. 3 and requires both `scripts/clean.csv` and `plots/eval/*/errors.npz`
 * **`generalization.py`** was used for Fig. 5 & Suppl. Fig. 2 and requires both `scripts/clean.csv` and `plots/generalization_*.csv`
-* **`hyperparam.py`** was used for Fig. 4 & Suppl. Fig. 1 requires only `scripts/clean.csv`
-* **`indices.py`** was used for Fig. 7 & Suppl. Fig. 4 requires both `scripts/clean.csv`and `plots/eval/*/indices.npz`
+* **`hyperparam.py`** was used for Fig. 4 & Suppl. Fig. 1 and requires only `scripts/clean.csv`
+* **`indices.py`** was used for Fig. 7 & Suppl. Fig. 4 and requires both `scripts/clean.csv`and `plots/eval/*/indices.npz`
 * **`time.py`** was used for Tab. 2 and requires only `scripts/clean.csv`
-
-The `scripts/clean.csv` contains the experiment runs that were exported from MLflow. The remaining result files were generated using `scripts/eval.py`.
