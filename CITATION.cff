@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the accompanying paper."
+authors:
+- family-names: "Altstidl"
+  given-names: "Thomas"
+  orcid: "https://orcid.org/0000-0002-2326-4258"
+title: "Just a Matter of Scale? Scale Equivariance in CNNs"
+url: "https://github.com/taltstidl/scale-equivariant-cnn"
+preferred-citation:
+  type: conference-paper
+  authors:
+  - family-names: "Altstidl"
+    given-names: "Thomas"
+    orcid: "https://orcid.org/0000-0002-2326-4258"
+  - family-names: "Nguyen"
+    given-names: "An"
+  - family-names: "Schwinn"
+    given-names: "Leo"
+  - family-names: "Köferl"
+    given-names: "Franz"
+  - family-names: "Mutschler"
+    given-names: "Christopher"
+  - family-names: "Eskofier"
+    given-names: "Björn"
+  - family-names: "Zanca"
+    given-names: "Dario"
+  doi: "10.1109/IJCNN54540.2023.10191724"
+  title: "Just a Matter of Scale? Reevaluating Scale Equivariance in Convolutional Neural Networks"
+  collection-title: "Proceedings of the 2023 International Joint Conference on Neural Networks (IJCNN)"
+  conference:
+      name: "2023 International Joint Conference on Neural Networks (IJCNN)"
+      location: "Gold Coast Convention and Exhibition Centre"
+      city: "Gold Coast"
+      region: "Queensland"
+      country: AU
+      date-start: 2023-06-18
+      date-end: 2023-06-23
+  year: 2021
