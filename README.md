@@ -1,6 +1,7 @@
 # Just a Matter of Scale? Scale Equivariance in CNNs
 
-> **Note** A detailed analysis of scale generalization for various models is given in our preprint
+> [!NOTE]
+> A detailed analysis of scale generalization for various models is given in our preprint
 > 
 > [Just a Matter of Scale? Reevaluating Scale Equivariance in Convolutional Neural Networks](https://arxiv.org/abs/2211.10288)  
 > **Thomas Altstidl, An Nguyen, Leo Schwinn, Franz Köferl, Christopher Mutschler, Björn Eskofier, Dario Zanca**
@@ -61,8 +62,7 @@ The remainer of this document will focus on reproducing the results given in our
 
 ## Reproducing Results
 
-> **Warning**
->
+> [!WARNING]
 > While we have taken great care to document everything, the scope of this project makes it likely that minor details may still be missing. If you have trouble recreating our experiments on your own machines, please create a new [issue](https://github.com/taltstidl/scale-equivariant-cnn/issues/new/choose) and we'd be more than happy to assist.
 
 ### Setting up environment
